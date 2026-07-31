@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mass Effect: M-35 Mako Surface Exploration</title>
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <!-- Google Fonts Sci-Fi -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Rajdhani:wght@500;600;700&display=swap" rel="stylesheet">
+
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Rajdhani', sans-serif;
+            background-color: #020617;
+            color: #e0f2fe;
+            user-select: none;
+            overflow: hidden;
+        }
+
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* Glassmorphism Sci-fi Border */
+        .scifi-panel {
+            background: rgba(8, 20, 38, 0.85);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(56, 189, 248, 0.35);
+            box-shadow: 0 0 20px rgba(14, 165, 233, 0.2), inset 0 0 15px rgba(14, 165, 233, 0.08);
+            clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 15px 100%, 0 calc(100% - 15px));
+        }
+
+        .scifi-button {
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.25) 0%, rgba(3, 105, 161, 0.5) 100%);
+            border: 1px solid #38bdf8;
+            transition: all 0.2s ease;
+            clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+        }
+
+        .scifi-button:hover {
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.6) 0%, rgba(14, 165, 233, 0.8) 100%);
+            box-shadow: 0 0 18px rgba(56, 189, 248, 0.7);
+            transform: translateY(-1px);
+        }
+
+        .scifi-button:active {
+            transform: translateY(1px);
+        }
+
+        /* Scanline Overlay */
+        .scanlines {
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.18) 50%
+            ), linear-gradient(
+                90deg,
+                rgba(255, 0, 0, 0.02),
+                rgba(0, 255, 0, 0.01),
+                rgba(0, 0, 255, 0.02)
+            );
+            background-size: 100% 3px, 6px 100%;
+            pointer-events: none;
+        }
+
+        /* Floating Harvest Popups */
+        @keyframes floatUpFade {
+            0% { opacity: 0; transform: translateY(0px) scale(0.8); }
+            20% { opacity: 1; transform: translateY(-20px) scale(1.1); }
+            80% { opacity: 1; transform: translateY(-40px) scale(1); }
+            100% { opacity: 0; transform: translateY(-60px) scale(0.9); }
+        }
+        .animate-harvest-popup {
+            animation: floatUpFade 1.6s ease-out forwards;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: rgba(3, 105, 161, 0.1); }
+        ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.5); border-radius: 2px; }
+    </style>
+</head>
+<body class="w-screen h-screen relative select-none">
+
+    <!-- 3D Canvas Viewport -->
+    <div id="canvas-container" class="w-full h-full absolute inset-0 z-0"></div>
+
+    <!-- Scanline CRT FX -->
+    <div class="scanlines absolute inset-0 z-10"></div>
+
+    <!-- Floating harvest notification layer -->
+    <div id="harvest-popup-layer" class="absolute inset-0 z-20 pointer-events-none overflow-hidden"></div>
+
+    <!-- Top Sci-Fi Header HUD -->
+    <header class="absolute top-4 left-4 right-4 z-20 flex flex-wrap justify-between items-center pointer-events-none gap-3">
+        <!-- Vehicle Status -->
+        <div class="scifi-panel p-3 px-5 flex items-center gap-4 pointer-events-auto">
+            <div class="w-10 h-10 rounded-full border border-emerald-400/60 flex items-center justify-center bg-emerald-950/40 text-emerald-400">
+                <i class="fa-solid fa-truck-monster text-lg"></i>
+            </div>
+            <div>
+                <div class="text-[10px] text-emerald-400 tracking-widest font-orbitron uppercase">Surface Recon Vehicle</div>
+                <div class="text-base font-bold text-white tracking-wider flex items-center gap-2 font-orbitron">
+                    M-35 MAKO
+                    <span class="text-[10px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">DEPLOYED</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Planet Info Banner -->
+        <div class="text-center bg-slate-950/70 backdrop-blur-md px-6 py-2 rounded-lg border border-cyan-500/30">
+            <div id="hud-planet-type" class="text-[11px] text-sky-400 font-orbitron tracking-[0.2em] uppercase">BLUE SKY & LAKES EXPLORATION</div>
+            <div id="hud-planet-name" class="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-sky-300 via-cyan-100 to-emerald-300 font-orbitron">
+                AETHEL PRIME
+            </div>
+            <div class="flex justify-center gap-3 text-[11px] text-cyan-300/80 mt-0.5">
+                <span>Environment: <strong id="hud-planet-temp" class="text-emerald-300">Clear Sky & Lakes</strong></span>
+                <span>Terrain Hazard: <strong id="hud-planet-hazard" class="text-cyan-300">Class 1 (Mild)</strong></span>
+            </div>
+        </div>
+
+        <!-- Return to Orbit Button -->
+        <div class="scifi-panel p-2 px-4 flex items-center gap-3 pointer-events-auto">
+            <button id="btn-return-orbit" class="scifi-button px-4 py-2 text-xs font-bold text-cyan-200 hover:text-white flex items-center gap-2">
+                <i class="fa-solid fa-rocket text-amber-400"></i> RETURN TO NORMANDY
+            </button>
+        </div>
+    </header>
+
+    <!-- Top Right Harvested Resources Panel -->
+    <div class="absolute top-24 right-4 z-20 pointer-events-auto">
+        <div class="scifi-panel p-4 w-64 text-xs space-y-2">
+            <div class="font-bold font-orbitron text-cyan-400 border-b border-cyan-500/30 pb-1.5 flex justify-between items-center">
+                <span><i class="fa-solid fa-gem mr-1"></i> SURFACING CARGO</span>
+                <span class="text-[10px] text-emerald-400 uppercase tracking-widest font-normal">REALTIME</span>
+            </div>
+
+            <!-- Eezo -->
+            <div class="flex justify-between items-center bg-purple-950/40 p-1.5 px-2.5 rounded border border-purple-500/30">
+                <span class="text-purple-300 font-semibold flex items-center gap-1.5">
+                    <i class="fa-solid fa-atom text-purple-400"></i> Eezo:
+                </span>
+                <span id="cargo-eezo" class="font-mono text-sm font-bold text-white">+0</span>
+            </div>
+
+            <!-- Platinum -->
+            <div class="flex justify-between items-center bg-slate-900/60 p-1.5 px-2.5 rounded border border-slate-500/30">
+                <span class="text-slate-200 font-semibold flex items-center gap-1.5">
+                    <i class="fa-solid fa-gem text-slate-300"></i> Platinum:
+                </span>
+                <span id="cargo-plat" class="font-mono text-sm font-bold text-white">+0</span>
+            </div>
+
+            <!-- Palladium -->
+            <div class="flex justify-between items-center bg-amber-950/40 p-1.5 px-2.5 rounded border border-amber-500/30">
+                <span class="text-amber-300 font-semibold flex items-center gap-1.5">
+                    <i class="fa-solid fa-cubes text-amber-400"></i> Palladium:
+                </span>
+                <span id="cargo-palla" class="font-mono text-sm font-bold text-white">+0</span>
+            </div>
+
+            <!-- Iridium -->
+            <div class="flex justify-between items-center bg-cyan-950/40 p-1.5 px-2.5 rounded border border-cyan-500/30">
+                <span class="text-cyan-300 font-semibold flex items-center gap-1.5">
+                    <i class="fa-solid fa-shield-halved text-cyan-400"></i> Iridium:
+                </span>
+                <span id="cargo-iri" class="font-mono text-sm font-bold text-white">+0</span>
+            </div>
+
+            <!-- Total Nodes Remaining -->
+            <div class="text-[11px] text-sky-300/70 pt-1 flex justify-between">
+                <span>Unmined Ore Outcrops:</span>
+                <strong id="nodes-remaining-count" class="text-amber-300">25 / 25</strong>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Left Controls & Mako Gauges -->
+    <div class="absolute bottom-4 left-4 z-20 pointer-events-auto space-y-3">
+        <!-- Telemetry Gauges -->
+        <div class="scifi-panel p-3 text-xs w-72 space-y-2">
+            <!-- Shield / Hull Integrity -->
+            <div>
+                <div class="flex justify-between text-[11px] mb-0.5">
+                    <span class="text-cyan-300 font-bold font-orbitron"><i class="fa-solid fa-shield-cat mr-1"></i> MAKO SHIELD / HULL</span>
+                    <span id="hud-hull-val" class="text-cyan-300 font-mono">100%</span>
+                </div>
+                <div class="w-full h-2.5 bg-cyan-950 rounded-full overflow-hidden border border-cyan-500/40">
+                    <div id="hud-hull-bar" class="h-full bg-gradient-to-r from-cyan-500 to-emerald-400 w-full transition-all duration-200"></div>
+                </div>
+            </div>
+
+            <!-- Boost / Jump Thruster Energy -->
+            <div>
+                <div class="flex justify-between text-[11px] mb-0.5">
+                    <span class="text-amber-300 font-bold font-orbitron"><i class="fa-solid fa-bolt mr-1"></i> JUMP THRUSTERS [SPACE]</span>
+                    <span id="hud-boost-val" class="text-amber-300 font-mono">READY</span>
+                </div>
+                <div class="w-full h-2.5 bg-amber-950 rounded-full overflow-hidden border border-amber-500/40">
+                    <div id="hud-boost-bar" class="h-full bg-gradient-to-r from-amber-500 to-yellow-300 w-full transition-all duration-100"></div>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center text-[11px] text-sky-200/80 pt-1 border-t border-cyan-500/20">
+                <span>Speed Telemetry:</span>
+                <span id="hud-speed-val" class="font-mono text-cyan-300 font-bold">0.0 km/h</span>
+            </div>
+        </div>
+
+        <!-- Driving Controls Panel -->
+        <div class="scifi-panel p-3 text-xs text-sky-300/80 space-y-1 w-72">
+            <div class="font-bold font-orbitron text-cyan-400 mb-1 flex items-center justify-between">
+                <span><i class="fa-solid fa-gamepad mr-1"></i> MAKO CONTROLS</span>
+                <span class="text-[10px] text-emerald-400 font-normal">AVOID TREES & ROCKS</span>
+            </div>
+            <div><kbd class="px-1.5 py-0.5 bg-cyan-950 border border-cyan-500/40 rounded text-cyan-200">W / S</kbd> : Smooth Acceleration / Brake</div>
+            <div><kbd class="px-1.5 py-0.5 bg-cyan-950 border border-cyan-500/40 rounded text-cyan-200">A / D</kbd> : Natural Steering</div>
+            <div><kbd class="px-1.5 py-0.5 bg-cyan-950 border border-cyan-500/40 rounded text-cyan-200">SHIFT</kbd> : Nitro Boosters</div>
+            <div><kbd class="px-1.5 py-0.5 bg-cyan-950 border border-cyan-500/40 rounded text-cyan-200">SPACE</kbd> : Jump Thrusters (Launch Mako)</div>
+            <div><kbd class="px-1.5 py-0.5 bg-cyan-950 border border-cyan-500/40 rounded text-cyan-200">RIGHT DRAG</kbd> : Orbit Camera</div>
+        </div>
+    </div>
+
+    <!-- Minimap Radar Bottom Right -->
+    <div class="absolute bottom-4 right-4 z-20 pointer-events-auto">
+        <div class="scifi-panel p-2 flex flex-col items-center">
+            <div class="text-[10px] font-orbitron text-cyan-400 mb-1 tracking-widest flex items-center gap-1">
+                <i class="fa-solid fa-radar text-amber-400"></i> SURFACE RADAR
+            </div>
+            <div class="relative w-36 h-36 rounded-full border border-cyan-500/50 bg-cyan-950/70 overflow-hidden flex items-center justify-center">
+                <!-- Radar grid rings -->
+                <div class="absolute w-28 h-28 rounded-full border border-cyan-500/20"></div>
+                <div class="absolute w-18 h-18 rounded-full border border-cyan-500/20"></div>
+                <div class="absolute w-8 h-8 rounded-full border border-cyan-500/20"></div>
+                <div class="absolute w-full h-[1px] bg-cyan-500/20"></div>
+                <div class="absolute h-full w-[1px] bg-cyan-500/20"></div>
+                
+                <!-- Minimap Canvas -->
+                <canvas id="surface-minimap" width="144" height="144" class="absolute inset-0 z-10"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Onscreen Touch Controls for Mobile -->
+    <div class="absolute bottom-20 left-1/2 -translate-x-1/2 z-30 md:hidden flex flex-col items-center gap-2 pointer-events-auto">
+        <div class="flex gap-2">
+            <button id="touch-btn-up" class="w-12 h-12 rounded-full bg-cyan-900/80 border border-cyan-400 flex items-center justify-center text-white active:bg-cyan-600">
+                <i class="fa-solid fa-arrow-up"></i>
+            </button>
+        </div>
+        <div class="flex gap-4">
+            <button id="touch-btn-left" class="w-12 h-12 rounded-full bg-cyan-900/80 border border-cyan-400 flex items-center justify-center text-white active:bg-cyan-600">
+                <i class="fa-solid fa-arrow-left"></i>
+            </button>
+            <button id="touch-btn-jump" class="w-12 h-12 rounded-full bg-amber-600/80 border border-amber-400 flex items-center justify-center text-white active:bg-amber-500 font-bold text-xs">
+                JUMP
+            </button>
+            <button id="touch-btn-right" class="w-12 h-12 rounded-full bg-cyan-900/80 border border-cyan-400 flex items-center justify-center text-white active:bg-cyan-600">
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </div>
+        <div class="flex gap-2">
+            <button id="touch-btn-down" class="w-12 h-12 rounded-full bg-cyan-900/80 border border-cyan-400 flex items-center justify-center text-white active:bg-cyan-600">
+                <i class="fa-solid fa-arrow-down"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Notification Toasts Container -->
+    <div id="toast-container" class="fixed top-20 left-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <script>
+        /* ===================================================================
+           WEB AUDIO SYNTHESIZER FOR MAKO MOTOR, BOUNCES & RESOURCE IMPACT SFX
+           =================================================================== */
+        class MakoAudioSystem {
+            constructor() {
+                this.ctx = null;
+                this.enabled = true;
+            }
+
+            init() {
+                if (!this.ctx) {
+                    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                    this.ctx = new AudioCtx();
+                }
+            }
+
+            playImpact() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(160, now);
+                osc.frequency.exponentialRampToValueAtTime(35, now + 0.35);
+
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.35);
+
+                const chime = this.ctx.createOscillator();
+                const chimeGain = this.ctx.createGain();
+                chime.type = 'sine';
+                chime.frequency.setValueAtTime(987.77, now);
+                chime.frequency.setValueAtTime(1318.51, now + 0.08);
+                chime.frequency.setValueAtTime(1975.53, now + 0.16);
+
+                chimeGain.gain.setValueAtTime(0.25, now);
+                chimeGain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+                chime.connect(chimeGain);
+                chimeGain.connect(this.ctx.destination);
+                chime.start(now);
+                chime.stop(now + 0.45);
+            }
+
+            playBounce() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(110, now);
+                osc.frequency.exponentialRampToValueAtTime(40, now + 0.25);
+
+                gain.gain.setValueAtTime(0.3, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            }
+
+            playJumpBoost() {
+                if (!this.enabled) return;
+                this.init();
+                const now = this.ctx.currentTime;
+
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(140, now);
+                osc.frequency.exponentialRampToValueAtTime(650, now + 0.4);
+
+                gain.gain.setValueAtTime(0.35, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.5);
+            }
+        }
+
+        const audioSys = new MakoAudioSystem();
+    </script>
+
+    <script>
+        /* ===================================================================
+           3D EXPLORATION & MAKO DRIVING LOGIC (THREE.JS)
+           =================================================================== */
+
+        let scene, camera, renderer;
+        let activePlanet = null;
+        let terrainMesh, terrainGeo;
+        let makoGroup, makoBodyMesh, makoTurretMesh, makoWheels = [];
+        let headlights = [];
+        let normandyLZGroup;
+        let resourceNodes = [];
+        let obstacles = [];
+        let lakes = [];
+        let lakeMeshes = [];
+        let particleExplosions = [];
+
+        // Lake Definitions (X, Z, Radius)
+        lakes = [
+            { x: -55, z: 45, r: 28 },
+            { x: 65, z: -70, r: 34 },
+            { x: -90, z: -95, r: 26 },
+            { x: 95, z: 85, r: 30 }
+        ];
+
+        // Mako Physics State (Fine-Tuned & Smoother Controls)
+        const makoState = {
+            pos: new THREE.Vector3(0, 0, 0),
+            vel: new THREE.Vector3(0, 0, 0),
+            speed: 0,
+            targetSpeed: 0,
+            maxSpeed: 0.75,
+            accel: 0.02,
+            friction: 0.965,
+            angle: 0, 
+            steerAngle: 0,
+            targetSteerAngle: 0,
+            maxSteer: 0.038,
+            jumpVel: 0,
+            isGrounded: true,
+            boostEnergy: 100,
+            boostMax: 100,
+            hull: 100,
+            harvested: { eezo: 0, plat: 0, palla: 0, iri: 0 }
+        };
+
+        const keys = {};
+
+        // Camera Orbit Controls
+        let cameraDistance = 22;
+        let cameraPitch = 0.32;
+        let cameraYaw = 0;
+        let isMouseDown = false;
+        let prevMouseX = 0, prevMouseY = 0;
+
+        /* Terrain Heightmap Function (With Lake Depressions) */
+        function getTerrainHeight(x, z) {
+            // Base Rolling Hills Waves
+            let h1 = Math.sin(x * 0.02) * Math.cos(z * 0.02) * 5.5;
+            let h2 = Math.sin(x * 0.05 + 1.2) * Math.sin(z * 0.04) * 2.8;
+            let h3 = Math.cos(x * 0.09) * Math.sin(z * 0.09) * 1.2;
+            let height = h1 + h2 + h3;
+
+            // Flat area around Normandy LZ at (0,0)
+            const distFromCenter = Math.sqrt(x * x + z * z);
+            const flatFactor = Math.min(1, Math.max(0, (distFromCenter - 25) / 35));
+            height *= flatFactor;
+
+            // Lake Basins (Smoothly dip height down into water)
+            lakes.forEach(l => {
+                const distToLake = Math.sqrt((x - l.x) ** 2 + (z - l.z) ** 2);
+                if (distToLake < l.r + 15) {
+                    const dipFactor = Math.cos(Math.min(1, distToLake / (l.r + 15)) * Math.PI * 0.5);
+                    height = height * (1 - dipFactor) - 4.5 * dipFactor;
+                }
+            });
+
+            return height;
+        }
+
+        function initScene() {
+            // Load Active Planet Data
+            const stored = localStorage.getItem('mass_effect_land_planet');
+            if (stored) {
+                try { activePlanet = JSON.parse(stored); } catch(e){}
+            }
+            if (!activePlanet) {
+                activePlanet = {
+                    name: 'AETHEL PRIME',
+                    type: 'Garden World',
+                    color: 0x34d399,
+                    temp: '24° C',
+                    hazard: 'Class 1 (Clear)',
+                    resources: { eezo: 60, plat: 80, palla: 50, iri: 40 }
+                };
+            }
+
+            // Update UI Header
+            document.getElementById('hud-planet-name').textContent = activePlanet.name;
+            document.getElementById('hud-planet-type').textContent = 'CLEAR BLUE SKY & LAKES - MAKO EXPEDITION';
+            document.getElementById('hud-planet-temp').textContent = '24° C (Pleasant)';
+            document.getElementById('hud-planet-hazard').textContent = 'Class 1 (Mild)';
+
+            // Scene setup
+            scene = new THREE.Scene();
+            
+            // Vibrant Blue Sky & Atmospheric Fog
+            scene.background = new THREE.Color(0x38bdf8); // Bright Blue Sky
+            scene.fog = new THREE.FogExp2(0xbae6fd, 0.0018); // Soft horizon haze
+
+            // Camera setup
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+            // Renderer setup
+            renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            // Sunlight & Sky Lights
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.55);
+            scene.add(ambientLight);
+
+            const sunLight = new THREE.DirectionalLight(0xfffbeb, 1.35); // Warm Sun
+            sunLight.position.set(120, 180, 90);
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.width = 2048;
+            sunLight.shadow.mapSize.height = 2048;
+            sunLight.shadow.camera.near = 0.5;
+            sunLight.shadow.camera.far = 600;
+            sunLight.shadow.camera.left = -160;
+            sunLight.shadow.camera.right = 160;
+            sunLight.shadow.camera.top = 160;
+            sunLight.shadow.camera.bottom = -160;
+            scene.add(sunLight);
+
+            // Build Terrain, Lakes, Normandy LZ, Mako Vehicle, Obstacles (Trees/Rocks) & Resources
+            buildTerrain();
+            buildLakes();
+            buildNormandyLZ();
+            buildMakoVehicle();
+            spawnObstacles(); // Trees & Rocks
+            spawnResourceNodes();
+
+            // Input Listeners
+            setupInputListeners();
+        }
+
+        function buildTerrain() {
+            const size = 400;
+            const segments = 130;
+            terrainGeo = new THREE.PlaneGeometry(size, size, segments, segments);
+            terrainGeo.rotateX(-Math.PI / 2);
+
+            const posAttr = terrainGeo.attributes.position;
+            for (let i = 0; i < posAttr.count; i++) {
+                const x = posAttr.getX(i);
+                const z = posAttr.getZ(i);
+                posAttr.setY(i, getTerrainHeight(x, z));
+            }
+            terrainGeo.computeVertexNormals();
+
+            // Green/Lush Grassland Surface Material
+            const terrainMat = new THREE.MeshStandardMaterial({
+                color: 0x15803d, // Lush Emerald Grass Green
+                roughness: 0.8,
+                metalness: 0.1
+            });
+
+            terrainMesh = new THREE.Mesh(terrainGeo, terrainMat);
+            terrainMesh.receiveShadow = true;
+            scene.add(terrainMesh);
+        }
+
+        function buildLakes() {
+            lakeMeshes = [];
+            lakes.forEach(l => {
+                const lakeGeo = new THREE.CircleGeometry(l.r, 48);
+                lakeGeo.rotateX(-Math.PI / 2);
+
+                const lakeMat = new THREE.MeshStandardMaterial({
+                    color: 0x0284c7, // Glossy Sky Blue Water
+                    emissive: 0x0369a1,
+                    emissiveIntensity: 0.15,
+                    roughness: 0.05,
+                    metalness: 0.9,
+                    transparent: true,
+                    opacity: 0.85
+                });
+
+                const water = new THREE.Mesh(lakeGeo, lakeMat);
+                water.position.set(l.x, -1.4, l.z); // Placed at water level Y=-1.4
+                water.receiveShadow = true;
+                scene.add(water);
+                lakeMeshes.push(water);
+            });
+        }
+
+        function buildNormandyLZ() {
+            normandyLZGroup = new THREE.Group();
+            normandyLZGroup.position.set(0, getTerrainHeight(0, -35), -35);
+
+            // Normandy SR-3 Hull
+            const hullGeo = new THREE.ConeGeometry(6, 32, 8);
+            hullGeo.rotateX(Math.PI / 2);
+            const hullMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.2 });
+            const hull = new THREE.Mesh(hullGeo, hullMat);
+            hull.castShadow = true;
+            normandyLZGroup.add(hull);
+
+            // Wings
+            const wingGeo = new THREE.BoxGeometry(28, 0.8, 8);
+            const wingMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8 });
+            const wings = new THREE.Mesh(wingGeo, wingMat);
+            wings.position.set(0, 0, -4);
+            normandyLZGroup.add(wings);
+
+            // Glowing Blue Thrusters
+            const thrusterGeo = new THREE.CylinderGeometry(1.5, 2, 4, 16);
+            thrusterGeo.rotateX(Math.PI / 2);
+            const thrusterMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+            const thruster = new THREE.Mesh(thrusterGeo, thrusterMat);
+            thruster.position.set(0, 0, 14);
+            normandyLZGroup.add(thruster);
+
+            // Glowing LZ Ring Base
+            const lzRingGeo = new THREE.RingGeometry(8, 9.5, 32);
+            lzRingGeo.rotateX(-Math.PI / 2);
+            const lzRingMat = new THREE.MeshBasicMaterial({ color: 0x10b981, side: THREE.DoubleSide, transparent: true, opacity: 0.75 });
+            const lzRing = new THREE.Mesh(lzRingGeo, lzRingMat);
+            lzRing.position.y = 0.3;
+            normandyLZGroup.add(lzRing);
+
+            // Vertical Light Beacon Pillar
+            const beaconGeo = new THREE.CylinderGeometry(0.3, 0.3, 45, 16);
+            const beaconMat = new THREE.MeshBasicMaterial({ color: 0x10b981, transparent: true, opacity: 0.35 });
+            const beacon = new THREE.Mesh(beaconGeo, beaconMat);
+            beacon.position.y = 22.5;
+            normandyLZGroup.add(beacon);
+
+            scene.add(normandyLZGroup);
+        }
+
+        function buildMakoVehicle() {
+            makoGroup = new THREE.Group();
+
+            // Chassis Hull
+            const bodyGeo = new THREE.BoxGeometry(3.6, 1.8, 6.2);
+            const bodyMat = new THREE.MeshStandardMaterial({
+                color: 0x0f172a,
+                roughness: 0.3,
+                metalness: 0.85
+            });
+            makoBodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
+            makoBodyMesh.position.y = 1.6;
+            makoBodyMesh.castShadow = true;
+            makoGroup.add(makoBodyMesh);
+
+            // Cockpit Glass
+            const cabinGeo = new THREE.BoxGeometry(2.8, 1.1, 2.5);
+            const cabinMat = new THREE.MeshStandardMaterial({
+                color: 0x38bdf8,
+                roughness: 0.1,
+                metalness: 0.9,
+                emissive: 0x0c4a6e
+            });
+            const cabin = new THREE.Mesh(cabinGeo, cabinMat);
+            cabin.position.set(0, 2.3, 0.4);
+            makoGroup.add(cabin);
+
+            // Turret Gun Assembly
+            makoTurretMesh = new THREE.Group();
+            makoTurretMesh.position.set(0, 2.7, -0.6);
+
+            const turretBaseGeo = new THREE.CylinderGeometry(1.1, 1.3, 0.7, 16);
+            const turretMat = new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.9 });
+            const turretBase = new THREE.Mesh(turretBaseGeo, turretMat);
+            makoTurretMesh.add(turretBase);
+
+            // Dual Gun Barrels
+            const barrelGeo = new THREE.CylinderGeometry(0.18, 0.18, 3.2, 12);
+            barrelGeo.rotateX(Math.PI / 2);
+            const barrelMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.95 });
+
+            const barrel1 = new THREE.Mesh(barrelGeo, barrelMat);
+            barrel1.position.set(-0.35, 0.3, 1.4);
+            makoTurretMesh.add(barrel1);
+
+            const barrel2 = new THREE.Mesh(barrelGeo, barrelMat);
+            barrel2.position.set(0.35, 0.3, 1.4);
+            makoTurretMesh.add(barrel2);
+
+            makoGroup.add(makoTurretMesh);
+
+            // 6 Rugged Wheels
+            const wheelGeo = new THREE.CylinderGeometry(1.0, 1.0, 0.8, 18);
+            wheelGeo.rotateZ(Math.PI / 2);
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 });
+
+            const wheelOffsets = [
+                { x: -2.1, z: 2.1 },  { x: 2.1, z: 2.1 },   // Front
+                { x: -2.1, z: 0 },    { x: 2.1, z: 0 },     // Mid
+                { x: -2.1, z: -2.1 }, { x: 2.1, z: -2.1 }   // Rear
+            ];
+
+            makoWheels = [];
+            wheelOffsets.forEach(off => {
+                const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+                wheel.position.set(off.x, 1.0, off.z);
+                wheel.castShadow = true;
+                makoGroup.add(wheel);
+                makoWheels.push(wheel);
+            });
+
+            // Headlights
+            const headlightPositions = [-1.4, 1.4];
+            headlightPositions.forEach(x => {
+                const spotLight = new THREE.SpotLight(0xffffff, 2.5);
+                spotLight.position.set(x, 1.8, 3.0);
+                spotLight.target.position.set(x, 0, 25);
+                spotLight.angle = Math.PI / 6;
+                spotLight.penumbra = 0.3;
+                spotLight.castShadow = true;
+
+                makoGroup.add(spotLight);
+                makoGroup.add(spotLight.target);
+                headlights.push(spotLight);
+            });
+
+            makoState.pos.set(0, getTerrainHeight(0, 0), 0);
+            makoGroup.position.copy(makoState.pos);
+            scene.add(makoGroup);
+        }
+
+        /* Spawn Trees & Rocks Obstacles */
+        function spawnObstacles() {
+            obstacles = [];
+
+            // 1. Spawn Rocks / Boulders
+            const rockGeo = new THREE.DodecahedronGeometry(1, 1);
+            const rockMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.9 });
+
+            for (let i = 0; i < 45; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 30 + Math.random() * 140;
+                const rx = Math.sin(angle) * dist;
+                const rz = Math.cos(angle) * dist;
+                const ry = getTerrainHeight(rx, rz);
+
+                // Skip if inside a lake
+                if (ry < -0.5) continue;
+
+                const scale = 1.8 + Math.random() * 2.8;
+                const rock = new THREE.Mesh(rockGeo, rockMat);
+                rock.position.set(rx, ry + scale * 0.4, rz);
+                rock.scale.set(scale, scale * (0.8 + Math.random() * 0.4), scale);
+                rock.rotation.set(Math.random() * Math.PI, Math.random() * Math.PI, 0);
+                rock.castShadow = true;
+                rock.receiveShadow = true;
+                scene.add(rock);
+
+                obstacles.push({
+                    pos: new THREE.Vector3(rx, ry, rz),
+                    radius: scale * 0.9,
+                    type: 'rock'
+                });
+            }
+
+            // 2. Spawn Sci-Fi Pine Trees
+            const trunkGeo = new THREE.CylinderGeometry(0.5, 0.8, 4, 8);
+            const trunkMat = new THREE.MeshStandardMaterial({ color: 0x78350f, roughness: 0.9 });
+            const foliageMat = new THREE.MeshStandardMaterial({ color: 0x166534, roughness: 0.6 });
+
+            for (let i = 0; i < 55; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 35 + Math.random() * 145;
+                const tx = Math.sin(angle) * dist;
+                const tz = Math.cos(angle) * dist;
+                const ty = getTerrainHeight(tx, tz);
+
+                // Skip if inside lake
+                if (ty < -0.5) continue;
+
+                const treeGroup = new THREE.Group();
+                treeGroup.position.set(tx, ty, tz);
+
+                // Trunk
+                const trunk = new THREE.Mesh(trunkGeo, trunkMat);
+                trunk.position.y = 2;
+                trunk.castShadow = true;
+                treeGroup.add(trunk);
+
+                // 3 Foliage Tiers
+                for (let tier = 0; tier < 3; tier++) {
+                    const coneGeo = new THREE.ConeGeometry(3.2 - tier * 0.7, 4.5, 8);
+                    const foliage = new THREE.Mesh(coneGeo, foliageMat);
+                    foliage.position.y = 4.2 + tier * 2.6;
+                    foliage.castShadow = true;
+                    treeGroup.add(foliage);
+                }
+
+                scene.add(treeGroup);
+
+                obstacles.push({
+                    pos: new THREE.Vector3(tx, ty, tz),
+                    radius: 2.2,
+                    type: 'tree'
+                });
+            }
+        }
+
+        function spawnResourceNodes() {
+            resourceNodes = [];
+            const nodeTypes = [
+                { type: 'eezo', name: 'Element Zero (Eezo)', color: 0xa855f7, icon: 'fa-atom', amount: 35 },
+                { type: 'plat', name: 'Platinum Ore', color: 0xe2e8f0, icon: 'fa-gem', amount: 45 },
+                { type: 'palla', name: 'Palladium Node', color: 0xf59e0b, icon: 'fa-cubes', amount: 50 },
+                { type: 'iri', name: 'Iridium Crystal', color: 0x06b6d4, icon: 'fa-shield-halved', amount: 40 }
+            ];
+
+            const nodeCount = 30;
+            for (let i = 0; i < nodeCount; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 32 + Math.random() * 135;
+                const rx = Math.sin(angle) * dist;
+                const rz = Math.cos(angle) * dist;
+                const ry = getTerrainHeight(rx, rz);
+
+                if (ry < -0.5) continue; // Skip underwater
+
+                const data = nodeTypes[i % nodeTypes.length];
+
+                const group = new THREE.Group();
+                group.position.set(rx, ry, rz);
+
+                const crystalGeo = new THREE.DodecahedronGeometry(1.6 + Math.random() * 0.8, 0);
+                const crystalMat = new THREE.MeshStandardMaterial({
+                    color: data.color,
+                    emissive: data.color,
+                    emissiveIntensity: 0.35,
+                    roughness: 0.2,
+                    metalness: 0.8
+                });
+                const crystalMesh = new THREE.Mesh(crystalGeo, crystalMat);
+                crystalMesh.position.y = 1.2;
+                crystalMesh.castShadow = true;
+                group.add(crystalMesh);
+
+                const rockGeo = new THREE.CylinderGeometry(2.2, 2.8, 0.8, 7);
+                const rockMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.9 });
+                const rock = new THREE.Mesh(rockGeo, rockMat);
+                group.add(rock);
+
+                const beamGeo = new THREE.CylinderGeometry(0.1, 0.1, 20, 8);
+                const beamMat = new THREE.MeshBasicMaterial({ color: data.color, transparent: true, opacity: 0.3 });
+                const beam = new THREE.Mesh(beamGeo, beamMat);
+                beam.position.y = 10;
+                group.add(beam);
+
+                scene.add(group);
+
+                resourceNodes.push({
+                    mesh: group,
+                    crystal: crystalMesh,
+                    pos: new THREE.Vector3(rx, ry, rz),
+                    data: data,
+                    active: true
+                });
+            }
+            updateRemainingNodesHUD();
+        }
+
+        function setupInputListeners() {
+            window.addEventListener('keydown', (e) => { keys[e.key.toLowerCase()] = true; });
+            window.addEventListener('keyup', (e) => { keys[e.key.toLowerCase()] = false; });
+
+            window.addEventListener('mousedown', (e) => {
+                if (e.button === 2) {
+                    isMouseDown = true;
+                    prevMouseX = e.clientX;
+                    prevMouseY = e.clientY;
+                }
+            });
+
+            window.addEventListener('mouseup', () => { isMouseDown = false; });
+            window.addEventListener('contextmenu', (e) => e.preventDefault());
+
+            window.addEventListener('mousemove', (e) => {
+                if (isMouseDown) {
+                    const dx = e.clientX - prevMouseX;
+                    const dy = e.clientY - prevMouseY;
+                    cameraYaw -= dx * 0.005;
+                    cameraPitch = Math.max(0.1, Math.min(Math.PI / 2.2, cameraPitch + dy * 0.005));
+                    prevMouseX = e.clientX;
+                    prevMouseY = e.clientY;
+                }
+            });
+
+            window.addEventListener('wheel', (e) => {
+                cameraDistance = Math.max(10, Math.min(45, cameraDistance + e.deltaY * 0.02));
+            });
+
+            document.getElementById('btn-return-orbit').addEventListener('click', returnToOrbit);
+
+            const setupTouchBtn = (id, key) => {
+                const btn = document.getElementById(id);
+                if (!btn) return;
+                btn.addEventListener('touchstart', (e) => { e.preventDefault(); keys[key] = true; });
+                btn.addEventListener('touchend', (e) => { e.preventDefault(); keys[key] = false; });
+            };
+
+            setupTouchBtn('touch-btn-up', 'w');
+            setupTouchBtn('touch-btn-down', 's');
+            setupTouchBtn('touch-btn-left', 'a');
+            setupTouchBtn('touch-btn-right', 'd');
+            setupTouchBtn('touch-btn-jump', ' ');
+
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        /* Fine-Tuned Smooth Driving Physics & Natural Suspension Ground Hugging */
+        function updateMakoPhysics() {
+            // Smooth Input Handling
+            let accelInput = 0;
+            if (keys['w'] || keys['arrowup']) accelInput += 1;
+            if (keys['s'] || keys['arrowdown']) accelInput -= 1;
+
+            let topSpeed = makoState.maxSpeed;
+            if (keys['shift']) {
+                topSpeed *= 1.55;
+                accelInput *= 1.35;
+            }
+
+            if (accelInput !== 0) {
+                makoState.speed += accelInput * makoState.accel;
+                makoState.speed = THREE.MathUtils.clamp(makoState.speed, -topSpeed * 0.45, topSpeed);
+            } else {
+                makoState.speed *= makoState.friction; // Smooth inertia dampening
+            }
+
+            // Natural Steering Interpolation
+            let steerInput = 0;
+            if (keys['a'] || keys['arrowleft']) steerInput += 1;
+            if (keys['d'] || keys['arrowright']) steerInput -= 1;
+
+            makoState.targetSteerAngle = steerInput * makoState.maxSteer;
+            makoState.steerAngle = THREE.MathUtils.lerp(makoState.steerAngle, makoState.targetSteerAngle, 0.12);
+
+            if (Math.abs(makoState.speed) > 0.005) {
+                const speedFactor = Math.min(1, Math.abs(makoState.speed) / makoState.maxSpeed);
+                const dir = makoState.speed >= 0 ? 1 : -1;
+                makoState.angle += makoState.steerAngle * dir * (0.6 + 0.4 * speedFactor);
+            }
+
+            // Jump Thrusters
+            if (keys[' '] && makoState.isGrounded && makoState.boostEnergy > 25) {
+                makoState.jumpVel = 0.72;
+                makoState.isGrounded = false;
+                makoState.boostEnergy -= 30;
+                audioSys.playJumpBoost();
+                showToast('Jump Thrusters Discharged!', 'warning');
+            }
+
+            if (makoState.boostEnergy < makoState.boostMax) {
+                makoState.boostEnergy = Math.min(makoState.boostMax, makoState.boostEnergy + 0.25);
+            }
+            updateBoostBarHUD();
+
+            // Apply Movement Vector
+            const forward = new THREE.Vector3(Math.sin(makoState.angle), 0, Math.cos(makoState.angle));
+            makoState.pos.addScaledVector(forward, makoState.speed);
+
+            // Check Lake Water Slowdown / Resistance
+            const terrainY = getTerrainHeight(makoState.pos.x, makoState.pos.z);
+            if (terrainY < -1.0) {
+                makoState.speed *= 0.92; // Water drag
+            }
+
+            // Check Obstacle Collisions (Trees & Rocks Bouncing)
+            checkObstacleCollisions();
+
+            // Gravity & Ground Height Alignment
+            makoState.pos.y += makoState.jumpVel;
+
+            if (makoState.pos.y <= terrainY) {
+                makoState.pos.y = terrainY;
+                makoState.jumpVel = 0;
+                makoState.isGrounded = true;
+            } else {
+                makoState.jumpVel -= 0.032; // Smooth gravity
+            }
+
+            // Update Mako Mesh Transform
+            makoGroup.position.copy(makoState.pos);
+            makoGroup.rotation.y = makoState.angle;
+
+            // Smooth 4-Corner Suspension Pitch & Roll
+            const side = new THREE.Vector3(forward.z, 0, -forward.x);
+
+            const frontY = getTerrainHeight(makoState.pos.x + forward.x * 2.8, makoState.pos.z + forward.z * 2.8);
+            const backY = getTerrainHeight(makoState.pos.x - forward.x * 2.8, makoState.pos.z - forward.z * 2.8);
+            const leftY = getTerrainHeight(makoState.pos.x + side.x * 1.8, makoState.pos.z + side.z * 1.8);
+            const rightY = getTerrainHeight(makoState.pos.x - side.x * 1.8, makoState.pos.z - side.z * 1.8);
+
+            const targetPitch = Math.atan2(frontY - backY, 5.6) * 0.7;
+            const targetRoll = Math.atan2(leftY - rightY, 3.6) * 0.5;
+
+            makoBodyMesh.rotation.x = THREE.MathUtils.lerp(makoBodyMesh.rotation.x, targetPitch, 0.15);
+            makoBodyMesh.rotation.z = THREE.MathUtils.lerp(makoBodyMesh.rotation.z, targetRoll, 0.15);
+
+            // Rotate wheels
+            makoWheels.forEach((w, idx) => {
+                w.rotation.x += makoState.speed * 0.75;
+                if (idx < 2) {
+                    w.rotation.y = makoState.steerAngle * 4.0;
+                }
+            });
+
+            // Speed Telemetry HUD
+            const speedKmh = (Math.abs(makoState.speed) * 120).toFixed(1);
+            document.getElementById('hud-speed-val').textContent = `${speedKmh} km/h`;
+        }
+
+        /* Solid Collision Detection with Tree & Rock Obstacles */
+        function checkObstacleCollisions() {
+            const makoRadius = 2.8;
+
+            obstacles.forEach(ob => {
+                const dist = makoState.pos.distanceTo(ob.pos);
+                const minDist = makoRadius + ob.radius;
+
+                if (dist < minDist) {
+                    // Collision recoil / bounce
+                    const pushDir = new THREE.Vector3().subVectors(makoState.pos, ob.pos).normalize();
+                    makoState.pos.addScaledVector(pushDir, (minDist - dist) + 0.1);
+                    makoState.speed = -makoState.speed * 0.45; // Bounce back
+
+                    audioSys.playBounce();
+                    showToast(`Bounced off ${ob.type === 'rock' ? 'Rock Boulder' : 'Tree'} obstacle!`, 'warning');
+                }
+            });
+        }
+
+        function checkResourceCollisions() {
+            const makoRadius = 3.6;
+
+            resourceNodes.forEach(node => {
+                if (!node.active) return;
+
+                node.crystal.rotation.y += 0.02;
+
+                const dist = makoState.pos.distanceTo(node.pos);
+                if (dist < makoRadius) {
+                    node.active = false;
+                    scene.remove(node.mesh);
+
+                    const d = node.data;
+                    makoState.harvested[d.type] += d.amount;
+                    document.getElementById(`cargo-${d.type}`).textContent = `+${makoState.harvested[d.type]}`;
+
+                    audioSys.playImpact();
+                    createSparkExplosion(node.pos, d.color);
+                    showHarvestPopup(node.pos, `+${d.amount} ${d.name.toUpperCase()}`);
+                    showToast(`Harvested +${d.amount} ${d.name}!`, 'success');
+
+                    updateRemainingNodesHUD();
+                }
+            });
+        }
+
+        function createSparkExplosion(pos, colorHex) {
+            const count = 25;
+            const geo = new THREE.BufferGeometry();
+            const positions = [];
+            const velocities = [];
+
+            for (let i = 0; i < count; i++) {
+                positions.push(pos.x, pos.y + 1, pos.z);
+                velocities.push(
+                    (Math.random() - 0.5) * 0.8,
+                    Math.random() * 0.8 + 0.2,
+                    (Math.random() - 0.5) * 0.8
+                );
+            }
+
+            geo.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+            const mat = new THREE.PointsMaterial({ color: colorHex, size: 0.6, transparent: true });
+            const pSystem = new THREE.Points(geo, mat);
+
+            scene.add(pSystem);
+            particleExplosions.push({ system: pSystem, velocities: velocities, age: 0 });
+        }
+
+        function updateParticles() {
+            for (let i = particleExplosions.length - 1; i >= 0; i--) {
+                const exp = particleExplosions[i];
+                exp.age += 1;
+                const posAttr = exp.system.geometry.attributes.position;
+
+                for (let p = 0; p < posAttr.count; p++) {
+                    posAttr.setX(p, posAttr.getX(p) + exp.velocities[p * 3]);
+                    posAttr.setY(p, posAttr.getY(p) + exp.velocities[p * 3 + 1]);
+                    posAttr.setZ(p, posAttr.getZ(p) + exp.velocities[p * 3 + 2]);
+                }
+                posAttr.needsUpdate = true;
+                exp.system.material.opacity = 1 - (exp.age / 40);
+
+                if (exp.age >= 40) {
+                    scene.remove(exp.system);
+                    particleExplosions.splice(i, 1);
+                }
+            }
+        }
+
+        function showHarvestPopup(pos3D, text) {
+            const vector = pos3D.clone();
+            vector.project(camera);
+
+            const x = (vector.x * 0.5 + 0.5) * window.innerWidth;
+            const y = (-(vector.y * 0.5) + 0.5) * window.innerHeight;
+
+            const popup = document.createElement('div');
+            popup.className = 'absolute text-amber-300 font-bold font-orbitron text-sm md:text-base drop-shadow-[0_0_8px_rgba(245,158,11,0.8)] animate-harvest-popup pointer-events-none';
+            popup.style.left = `${x}px`;
+            popup.style.top = `${y}px`;
+            popup.innerHTML = `<i class="fa-solid fa-circle-plus mr-1"></i> ${text}`;
+
+            document.getElementById('harvest-popup-layer').appendChild(popup);
+            setTimeout(() => popup.remove(), 1600);
+        }
+
+        function updateBoostBarHUD() {
+            const bar = document.getElementById('hud-boost-bar');
+            const val = document.getElementById('hud-boost-val');
+            const pct = (makoState.boostEnergy / makoState.boostMax) * 100;
+            bar.style.width = `${pct}%`;
+            val.textContent = pct >= 25 ? 'READY' : 'RECHARGING';
+        }
+
+        function updateRemainingNodesHUD() {
+            const activeCount = resourceNodes.filter(n => n.active).length;
+            document.getElementById('nodes-remaining-count').textContent = `${activeCount} / ${resourceNodes.length}`;
+        }
+
+        function updateCamera() {
+            const targetCamPos = new THREE.Vector3(
+                makoState.pos.x - Math.sin(makoState.angle + cameraYaw) * cameraDistance * Math.cos(cameraPitch),
+                makoState.pos.y + cameraDistance * Math.sin(cameraPitch),
+                makoState.pos.z - Math.cos(makoState.angle + cameraYaw) * cameraDistance * Math.cos(cameraPitch)
+            );
+
+            camera.position.lerp(targetCamPos, 0.08); // Butter-smooth spring camera
+            camera.lookAt(makoState.pos.x, makoState.pos.y + 2.5, makoState.pos.z);
+        }
+
+        function drawSurfaceMinimap() {
+            const canvas = document.getElementById('surface-minimap');
+            const ctx = canvas.getContext('2d');
+            const cx = 72;
+            const cy = 72;
+            const scale = 72 / 190;
+
+            ctx.clearRect(0, 0, 144, 144);
+
+            // Draw Lakes on Minimap (Blue Circles)
+            lakes.forEach(l => {
+                const lx = cx + l.x * scale;
+                const ly = cy + l.z * scale;
+                ctx.fillStyle = 'rgba(2, 132, 199, 0.5)';
+                ctx.beginPath();
+                ctx.arc(lx, ly, l.r * scale, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Draw Normandy LZ Marker
+            const lzX = cx + normandyLZGroup.position.x * scale;
+            const lzY = cy + normandyLZGroup.position.z * scale;
+            ctx.fillStyle = '#10b981';
+            ctx.beginPath();
+            ctx.arc(lzX, lzY, 5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Draw Obstacles (Grey Rocks & Dark Green Trees)
+            obstacles.forEach(ob => {
+                const ox = cx + ob.pos.x * scale;
+                const oy = cy + ob.pos.z * scale;
+                ctx.fillStyle = ob.type === 'tree' ? '#166534' : '#64748b';
+                ctx.beginPath();
+                ctx.arc(ox, oy, 1.8, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Draw Active Ore Nodes
+            resourceNodes.forEach(node => {
+                if (!node.active) return;
+                const nx = cx + node.pos.x * scale;
+                const ny = cy + node.pos.z * scale;
+
+                ctx.fillStyle = '#' + node.data.color.toString(16).padStart(6, '0');
+                ctx.beginPath();
+                ctx.arc(nx, ny, 2.5, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            // Draw Mako Rover Position
+            const mx = cx + makoState.pos.x * scale;
+            const my = cy + makoState.pos.z * scale;
+
+            ctx.fillStyle = '#f59e0b';
+            ctx.beginPath();
+            ctx.arc(mx, my, 4, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(mx, my);
+            ctx.lineTo(mx + Math.sin(makoState.angle) * 7, my + Math.cos(makoState.angle) * 7);
+            ctx.stroke();
+        }
+
+        function returnToOrbit() {
+            audioSys.playImpact();
+            localStorage.setItem('mass_effect_expedition_result', JSON.stringify(makoState.harvested));
+            showToast('Expedition complete. Returning to Normandy Shuttle Bay...', 'info');
+
+            setTimeout(() => {
+                window.location.href = 'mass_effect_planetary_exploration_game.html';
+            }, 900);
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            const colorClass = type === 'success' ? 'border-emerald-400 text-emerald-200 bg-emerald-950/90' :
+                             type === 'warning' ? 'border-amber-400 text-amber-200 bg-amber-950/90' :
+                             'border-cyan-400 text-cyan-200 bg-cyan-950/90';
+
+            toast.className = `scifi-panel p-3 text-xs border ${colorClass} shadow-lg transition-all duration-300 flex items-center gap-2 pointer-events-auto`;
+            toast.innerHTML = `<i class="fa-solid fa-circle-info text-sm"></i> <span>${message}</span>`;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-x-4');
+                setTimeout(() => toast.remove(), 300);
+            }, 3200);
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            updateMakoPhysics();
+            checkResourceCollisions();
+            updateParticles();
+            updateCamera();
+            drawSurfaceMinimap();
+
+            renderer.render(scene, camera);
+        }
+
+        window.onload = function() {
+            initScene();
+            animate();
+            showToast('Mako Exploration Initialized. Clear Blue Sky, Lakes & Natural Terrain Controls Active!', 'info');
+        };
+    </script>
+</body>
+</html>

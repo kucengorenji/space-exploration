@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <title>mikelrisyad.xyz</title>
+  <meta charset="utf-8"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&amp;family=Bricolage+Grotesque:ital,wght@0,400;0,600;1,400;1,600&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="description" content="Welcome! I’m Mikel. This is my little hypertext garden on the Internet — make yourself at home!"/>
+  
+  <link rel="icon" href="https://jzhao.xyz/static/icon.png"/>
+  
+  <!-- Handwriting Font stylesheet -->
+  <link href="./static/font/font-style.css" rel="stylesheet" type="text/css" spa-preserve/>
+  <!-- Main Stylesheet -->
+  <link href="./styles.css" rel="stylesheet" type="text/css" spa-preserve/>
+  <link href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" rel="stylesheet" type="text/css" spa-preserve/>
+  
+  <!-- Setup Cleanup Utility for Quartz Script -->
+  <script type="application/javascript">
+    window.cleanups = window.cleanups || [];
+    window.addCleanup = window.addCleanup || ((cb) => window.cleanups.push(cb));
+  </script>
+  
+  <!-- Prescript handles early theme detection to avoid flash -->
+  <script src="./prescript.js" type="application/javascript" spa-preserve></script>
+  
+  <!-- Mock Search index data fetch -->
+  <script type="application/javascript" spa-preserve>
+    const fetchData = fetch("./static/contentIndex.json").then(data => data.json());
+  </script>
+</head>
+<body data-slug="index">
+  <div id="quartz-root" class="page">
+    <div id="quartz-body">
+      
+      <!-- Left Sidebar -->
+      <div class="left sidebar">
+        <div class="flex-component" style="flex-direction: row; flex-wrap: nowrap; gap: 0.5rem; width: 100%;">
+          <div style="flex-grow: 1; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;">
+            <h2 class="page-title"><a href=".">mikelrisyad.xyz</a></h2>
+          </div>
+          
+          <!-- Search -->
+          <div style="flex-grow: 0; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;">
+            <div class="search">
+              <button class="search-button" aria-label="Search">
+                <svg role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 19.9 19.7">
+                  <title>Search</title>
+                  <g class="search-path" fill="none">
+                    <path stroke-linecap="square" d="M17.64 17.64l-5.4-5.4"></path>
+                    <circle cx="8" cy="8" r="6"></circle>
+                  </g>
+                </svg>
+                <p>Search</p>
+              </button>
+              <div class="search-container">
+                <div class="search-space">
+                  <input autocomplete="off" class="search-bar" name="search" type="text" aria-label="Search for something" placeholder="Search for something"/>
+                  <div class="search-layout" data-preview="true"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Darkmode Toggle -->
+          <div style="flex-grow: 0; flex-shrink: 1; flex-basis: auto; order: 0; align-self: center; justify-self: center;">
+            <button class="darkmode" aria-label="Toggle theme">
+              <svg xmlns="http://www.w3.org/2000/svg" class="dayIcon" viewBox="0 0 24 24" aria-label="Dark mode">
+                <title>Dark mode</title>
+                <circle cx="12" cy="12" r="5"></circle>
+                <line x1="12" y1="1" x2="12" y2="3"></line>
+                <line x1="12" y1="21" x2="12" y2="23"></line>
+                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                <line x1="1" y1="12" x2="3" y2="12"></line>
+                <line x1="21" y1="12" x2="23" y2="12"></line>
+                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+              </svg>
+              <svg xmlns="http://www.w3.org/2000/svg" class="nightIcon" viewBox="0 0 24 24" aria-label="Light mode">
+                <title>Light mode</title>
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Desktop Sidebar Sections -->
+        <div class="recent-notes desktop-only">
+          <h3>Recent Writing</h3>
+          <ul class="recent-ul">
+            <li class="recent-li">
+              <div class="section">
+                <div class="desc"><h3><a href="#" class="internal">On development and design</a></h3></div>
+                <p class="meta"><time datetime="2026-06-01T00:00:00.000Z">Jun 01, 2026</time></p>
+              </div>
+            </li>
+            <li class="recent-li">
+              <div class="section">
+                <div class="desc"><h3><a href="#" class="internal">2026: A life built from the days</a></h3></div>
+                <p class="meta"><time datetime="2026-01-01T00:00:00.000Z">Jan 01, 2026</time></p>
+              </div>
+            </li>
+          </ul>
+          <p><a class="see-more" href="#">See more →</a></p>
+        </div>
+        
+        <div class="recent-notes desktop-only">
+          <h3>Recent Notes</h3>
+          <ul class="recent-ul">
+            <li class="recent-li">
+              <div class="section">
+                <div class="desc"><h3><a href="#" class="internal">Hypertext Spaces</a></h3></div>
+                <p class="meta"><time datetime="2026-05-18T00:00:00.000Z">May 18, 2026</time></p>
+              </div>
+            </li>
+            <li class="recent-li">
+              <div class="section">
+                <div class="desc"><h3><a href="#" class="internal">L-Systems in WebGL</a></h3></div>
+                <p class="meta"><time datetime="2026-05-12T00:00:00.000Z">May 12, 2026</time></p>
+              </div>
+            </li>
+          </ul>
+          <p><a class="see-more" href="#">See more →</a></p>
+        </div>
+      </div>
+      
+      <!-- Center Content Area -->
+      <div class="center">
+        <div class="page-header">
+          <div class="popover-hint"></div>
+        </div>
+        
+        <!-- WebGL Dappled scene shadows render container -->
+        <div class="dappled-scene" aria-hidden="true"></div>
+        
+        <article class="popover-hint">
+          <pre class="poetry">Welcome!</pre>
+          <p>I’m Mikel. This is my little <a href="#" class="internal alias">hypertext</a> <a href="#" class="internal alias">garden</a> on the Internet — make yourself at home!</p>
+          
+          <p>Currently, I’m exploring what agentic and communal technology looks like. How might we create infrastructures and technologies that empower the residents of the web to have access to the same tools as the architects?</p>
+          
+          <p>On a broader level, I care deeply about creating <em><a href="#" class="external">spaces</a></em> that enable others to have more agency: agency to ask questions without judgement; agency to do what they are intrinsically drawn toward; agency to play (because what’s the point if we can’t have a bit of fun?).</p>
+          
+          <p>As far as ‘about’ pages go, I hope this acts as an open invitation into the many winding paths throughout this garden. Here are some places you may want to visit:</p>
+          
+          <ul>
+            <li><a href="#" class="internal alias">The oak letter desk</a>: a collection of my favourite writing;</li>
+            <li><a href="http://localhost:5173/" class="internal alias">⚡ Mass Effect Clone (Vite + Three.js Modular Engine)</a></li>
+            <li><a href="./mass%20effect%20clone%20/mass_effect_planetary_exploration_game.html" class="internal alias">🚀 Space Navigation</a> & <a href="./mass%20effect%20clone%20/mako_surface_exploration.html" class="internal alias">🏎️ Mako 3D Surface Exploration</a></li>
+            <li><a href="#" class="internal alias">The hand-crafted workbench</a>: craft I am proud of (websites, talks, workshops, projects, etc.);</li>
+            <li><a href="#" class="internal alias">The bookshelf on the far wall</a>: books that are in some state of read, being read, or to be read.</li>
+          </ul>
+          
+          <pre class="poetry">- mikel :)</pre>
+        </article>
+        
+        <hr/>
+        
+        <div class="page-footer">
+          <!-- Mobile sidebar lists -->
+          <div class="recent-notes mobile-only">
+            <h3>Recent Writing</h3>
+            <ul class="recent-ul">
+              <li class="recent-li">
+                <div class="section">
+                  <div class="desc"><h3><a href="#" class="internal">On development and design</a></h3></div>
+                  <p class="meta"><time datetime="2026-06-01T00:00:00.000Z">Jun 01, 2026</time></p>
+                </div>
+              </li>
+            </ul>
+            <p><a class="see-more" href="#">See more →</a></p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Right Sidebar (For symmetry) -->
+      <div class="right sidebar"></div>
+      
+      <!-- Footer -->
+      <footer class="">
+        <p>Created with <a href="https://quartz.jzhao.xyz/">Quartz v4.5.1</a> © 2026</p>
+        <ul>
+          <li><a href="#">GitHub</a></li>
+          <li><a href="#">Twitter</a></li>
+        </ul>
+      </footer>
+      
+    </div>
+  </div>
+  
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/copy-tex.min.js" type="application/javascript"></script>
+  <script type="application/javascript">
+    function n(){
+      let t=this.parentElement;
+      t.classList.toggle("is-collapsed");
+      let e=t.getElementsByClassName("callout-content")[0];
+      if(!e)return;
+      let l=t.classList.contains("is-collapsed");
+      e.style.gridTemplateRows=l?"0fr":"1fr"
+    }
+    function c(){
+      let t=document.getElementsByClassName("callout is-collapsible");
+      for(let e of t){
+        let l=e.getElementsByClassName("callout-title")[0],s=e.getElementsByClassName("callout-content")[0];
+        if(!l||!s)continue;
+        l.addEventListener("click",n),window.addCleanup(()=>l.removeEventListener("click",n));
+        let o=e.classList.contains("is-collapsed");
+        s.style.gridTemplateRows=o?"0fr":"1fr"
+      }
+    }
+    document.addEventListener("nav",c);
+  </script>
+  
+  <script src="./postscript.js" type="module"></script>
+  
+  <!-- Trigger Quartz standard event router load to run the dappled WebGL scene -->
+  <script type="module">
+    // Trigger the custom event "nav" required by Quartz postscript & prescript
+    // Doing this inside a module script guarantees it runs after postscript.js has loaded
+    document.dispatchEvent(new CustomEvent("nav", {
+      detail: { url: "index" }
+    }));
+  </script>
+</body>
+</html>

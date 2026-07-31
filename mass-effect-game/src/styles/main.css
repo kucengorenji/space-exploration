@@ -1,0 +1,66 @@
+body {
+  font-family: 'Rajdhani', sans-serif;
+  background-color: #020617;
+  color: #e0f2fe;
+  user-select: none;
+  overflow: hidden;
+}
+
+.font-orbitron {
+  font-family: 'Orbitron', sans-serif;
+}
+
+/* Glassmorphism Sci-Fi Panel */
+.scifi-panel {
+  background: rgba(8, 20, 38, 0.85);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  box-shadow: 0 0 25px rgba(14, 165, 233, 0.2), inset 0 0 15px rgba(14, 165, 233, 0.08);
+  clip-path: polygon(0 0, calc(100% - 15px) 0, 100% 15px, 100% 100%, 15px 100%, 0 calc(100% - 15px));
+}
+
+.scifi-button {
+  background: linear-gradient(135deg, rgba(14, 165, 233, 0.25) 0%, rgba(3, 105, 161, 0.5) 100%);
+  border: 1px solid #38bdf8;
+  transition: all 0.2s ease;
+  clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+}
+
+.scifi-button:hover {
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.6) 0%, rgba(14, 165, 233, 0.85) 100%);
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.7);
+  transform: translateY(-1px);
+}
+
+.scifi-button:active {
+  transform: translateY(1px);
+}
+
+/* Scanline CRT FX */
+.scanlines {
+  background: linear-gradient(
+      rgba(18, 16, 16, 0) 50%, 
+      rgba(0, 0, 0, 0.18) 50%
+  ), linear-gradient(
+      90deg,
+      rgba(255, 0, 0, 0.02),
+      rgba(0, 255, 0, 0.01),
+      rgba(0, 0, 255, 0.02)
+  );
+  background-size: 100% 3px, 6px 100%;
+  pointer-events: none;
+}
+
+@keyframes reticlePulse {
+  0% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.9; }
+  50% { transform: translate(-50%, -50%) scale(1.1); opacity: 0.5; }
+  100% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.9; }
+}
+
+.animate-reticle {
+  animation: reticlePulse 2s infinite ease-in-out;
+}
+
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: rgba(3, 105, 161, 0.1); }
+::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.5); border-radius: 2px; }
