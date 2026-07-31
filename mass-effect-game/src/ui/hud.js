@@ -6,6 +6,7 @@ import { gameState } from '../core/state.js';
 import { audioEngine } from '../core/audio.js';
 import { rouletteManager, getSpinsLeft } from './roulette.js';
 import { shopManager } from './shopModal.js';
+import { loginScreen } from './loginScreen.js';
 
 export class HUDManager {
     constructor(appContainer) {
@@ -67,6 +68,9 @@ export class HUDManager {
                         <span class="text-cyan-300 font-bold"><i class="fa-solid fa-shield-halved text-cyan-400"></i> <span id="hdr-iri">0</span></span>
                     </div>
                     <div class="h-8 w-px bg-cyan-500/20"></div>
+                    <button id="btn-open-login" class="scifi-button px-3 py-1.5 text-xs font-bold text-cyan-300 border-cyan-500/60 hover:text-white flex items-center gap-1.5" title="Multiplayer SSO Login">
+                        <i class="fa-solid fa-users text-cyan-400"></i> MULTIPLAYER
+                    </button>
                     <button id="btn-open-shop" class="scifi-button px-3 py-1.5 text-xs font-bold text-amber-300 border-amber-500/60 hover:text-white flex items-center gap-1.5" title="Open Space Shop">
                         <i class="fa-solid fa-cart-shopping text-amber-400"></i> SHOP
                     </button>
@@ -225,6 +229,10 @@ export class HUDManager {
                 gameState.setShipType(e.target.value);
             }
             audioEngine.playPing();
+        });
+
+        document.getElementById('btn-open-login').addEventListener('click', () => {
+            loginScreen.open();
         });
 
         document.getElementById('btn-open-shop').addEventListener('click', () => {
