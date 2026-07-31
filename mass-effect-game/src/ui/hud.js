@@ -8,6 +8,7 @@ import { rouletteManager, getSpinsLeft } from './roulette.js';
 import { shopManager } from './shopModal.js';
 import { loginScreen } from './loginScreen.js';
 import { profileModal } from './profileModal.js';
+import { codexModal } from './codexModal.js';
 import { subscribeAuthState } from '../multiplayer/auth.js';
 
 export class HUDManager {
@@ -88,12 +89,20 @@ export class HUDManager {
                             </div>
                         </button>
 
-                        <button id="btn-open-login" class="scifi-button px-2.5 py-1 text-[11px] font-bold text-cyan-300 border-cyan-500/60 hover:text-white flex items-center gap-1" title="Multiplayer SSO Login">
-                            <i class="fa-solid fa-users text-cyan-400"></i> MULTIPLAYER
+                        <button id="btn-open-login" class="scifi-button px-2.5 py-1 text-[11px] font-bold text-cyan-300 border-cyan-500/60 hover:text-white flex items-center gap-1" title="Click to Authenticate SSO">
+                            <i class="fa-solid fa-right-to-bracket text-cyan-400"></i> GUEST MODE - LOGIN
                         </button>
 
                         <button id="btn-open-shop" class="scifi-button px-2.5 py-1 text-[11px] font-bold text-amber-300 border-amber-500/60 hover:text-white flex items-center gap-1" title="Open Space Shop">
                             <i class="fa-solid fa-cart-shopping text-amber-400"></i> SHOP
+                        </button>
+
+                        <button id="btn-open-codex" class="scifi-button px-2.5 py-1 text-[11px] font-bold text-purple-300 border-purple-500/60 hover:text-white flex items-center gap-1 cursor-pointer" title="Open Alliance Codex Archives">
+                            <i class="fa-solid fa-book-bookmark text-purple-400"></i> CODEX
+                        </button>
+
+                        <button id="btn-hitbox-toggle" class="scifi-button px-2 py-1 text-[11px] font-bold text-emerald-300 border-emerald-500/60 hover:text-white flex items-center gap-1 cursor-pointer" title="Toggle 3D Hitbox Visualizers">
+                            <i id="hitbox-icon" class="fa-solid fa-cube text-emerald-400"></i> HITBOX
                         </button>
 
                         <button id="btn-sound-toggle" class="text-cyan-400 hover:text-white transition px-1.5 py-1" title="Toggle Sound Systems">
@@ -126,13 +135,57 @@ export class HUDManager {
                 </div>
             </div>
 
-            <!-- Controls Panel -->
-            <div class="absolute bottom-4 left-4 z-20 pointer-events-auto">
-                <div class="scifi-panel p-3 text-xs text-sky-300/80 space-y-1.5 w-76">
+            <!-- Standalone SAO-Style Surface Vehicle Vitals HUD (Always Visible in Planet Mode at Bottom Left) -->
+            <div id="sao-vitals-hud" class="hidden absolute bottom-4 left-4 z-20 pointer-events-none transition-all duration-300">
+                <div class="scifi-panel p-3 bg-slate-950/80 border-l-4 border-l-emerald-400 border-y border-r border-emerald-500/40 rounded-r-lg shadow-[0_0_20px_rgba(16,185,129,0.25)] min-w-[270px] space-y-2">
+                    <!-- SAO Header Badge -->
+                    <div class="flex justify-between items-center border-b border-emerald-500/20 pb-1">
+                        <div class="flex items-center gap-2">
+                            <span class="px-1.5 py-0.5 rounded bg-emerald-950 border border-emerald-400 text-emerald-300 font-orbitron font-extrabold text-[9px] tracking-wider">LV.01</span>
+                            <span id="sao-vehicle-name" class="font-orbitron font-bold text-xs text-white tracking-wide">MAKO M35 RECON</span>
+                        </div>
+                        <span class="text-[9px] font-mono text-emerald-400 tracking-widest font-bold animate-pulse">&bull; ONLINE</span>
+                    </div>
+
+                    <!-- SAO HP Bar -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-center text-[10px] font-orbitron">
+                            <span class="text-emerald-400 font-bold flex items-center gap-1">
+                                <i class="fa-solid fa-heart-pulse text-emerald-400 text-xs"></i> HULL HP
+                            </span>
+                            <span id="sao-hp-text" class="text-white font-mono font-bold">100 / 100 HP</span>
+                        </div>
+                        <div class="relative w-full h-3 bg-slate-900 rounded border border-emerald-500/40 overflow-hidden p-0.5">
+                            <div id="sao-hp-bar" class="h-full bg-gradient-to-r from-emerald-500 to-teal-300 rounded-sm transition-all duration-300 shadow-[0_0_10px_rgba(16,185,129,0.5)] w-full"></div>
+                        </div>
+                    </div>
+
+                    <!-- SAO Boost Energy Bar -->
+                    <div class="space-y-1">
+                        <div class="flex justify-between items-center text-[10px] font-orbitron">
+                            <span class="text-amber-400 font-bold flex items-center gap-1">
+                                <i class="fa-solid fa-bolt text-amber-400 text-xs"></i> NITRO THRUSTER
+                            </span>
+                            <span id="sao-boost-text" class="text-amber-300 font-mono font-bold">100%</span>
+                        </div>
+                        <div class="relative w-full h-2 bg-slate-900 rounded border border-amber-500/40 overflow-hidden p-0.5">
+                            <div id="sao-boost-bar" class="h-full bg-gradient-to-r from-amber-500 to-yellow-300 rounded-sm transition-all duration-150 shadow-[0_0_8px_rgba(245,158,11,0.5)] w-full"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Toggleable Controls Panel (Hidden by Default) -->
+            <div class="absolute bottom-4 left-4 z-20 pointer-events-auto flex flex-col items-start gap-1">
+                <button id="btn-toggle-controls" class="scifi-button px-2.5 py-1 text-[10px] font-bold text-slate-300 border-slate-500/50 hover:text-white flex items-center gap-1.5 cursor-pointer shadow-md" title="Toggle Controls Help">
+                    <i class="fa-solid fa-gamepad text-cyan-400"></i> <span id="ctrl-toggle-label">CONTROLS</span>
+                </button>
+                <div id="controls-box-body" class="hidden scifi-panel p-3 text-xs text-sky-300/80 space-y-2 w-76 transition-all duration-300">
                     <div class="font-bold font-orbitron text-cyan-400 mb-1 flex items-center justify-between border-b border-cyan-500/20 pb-1">
                         <span id="ctrl-title"><i class="fa-solid fa-gamepad mr-1"></i> CONTROLS</span>
                         <span id="ctrl-badge" class="text-[10px] text-amber-400">ACTIVE</span>
                     </div>
+
                     <div id="ctrl-body">
                         <!-- Populated dynamically -->
                     </div>
@@ -273,6 +326,7 @@ export class HUDManager {
             const avatarIcon = document.getElementById('hdr-user-icon');
             const userName = document.getElementById('hdr-user-name');
             const userStatus = document.getElementById('hdr-user-status');
+            const loginBtn = document.getElementById('btn-open-login');
 
             if (user) {
                 if (avatarImg) {
@@ -282,12 +336,30 @@ export class HUDManager {
                 if (avatarIcon) avatarIcon.classList.add('hidden');
                 if (userName) userName.textContent = user.displayName?.split(' ')[0].toUpperCase() || 'PILOT';
                 if (userStatus) userStatus.textContent = 'ONLINE';
+                if (loginBtn) loginBtn.classList.add('hidden');
             } else {
                 if (avatarImg) avatarImg.classList.add('hidden');
                 if (avatarIcon) avatarIcon.classList.remove('hidden');
                 if (userName) userName.textContent = 'COMMANDER';
                 if (userStatus) userStatus.textContent = 'GUEST';
+                if (loginBtn) loginBtn.classList.remove('hidden');
             }
+        });
+
+        document.getElementById('btn-open-codex').addEventListener('click', () => {
+            codexModal.open();
+        });
+
+        document.getElementById('btn-toggle-controls').addEventListener('click', () => {
+            const ctrlBody = document.getElementById('controls-box-body');
+            if (ctrlBody) {
+                ctrlBody.classList.toggle('hidden');
+                audioEngine.playPing();
+            }
+        });
+
+        document.getElementById('btn-hitbox-toggle').addEventListener('click', () => {
+            gameState.toggleHitboxes();
         });
 
         document.getElementById('btn-sound-toggle').addEventListener('click', () => {
@@ -385,9 +457,16 @@ export class HUDManager {
             shopBtn.style.display = state.mode === 'space' ? 'inline-flex' : 'none';
         }
 
-        // Sound Icon
+        // Sound & Hitbox Icons
         const sIcon = document.getElementById('sound-icon');
         if (sIcon) sIcon.className = state.soundEnabled ? 'fa-solid fa-volume-high text-sm' : 'fa-solid fa-volume-xmark text-sm text-red-400';
+
+        const hBtn = document.getElementById('btn-hitbox-toggle');
+        if (hBtn) {
+            hBtn.className = state.showHitboxes
+                ? 'scifi-button px-2 py-1 text-[11px] font-bold text-emerald-300 border-emerald-400 bg-emerald-950/80 shadow-[0_0_12px_rgba(16,185,129,0.5)]'
+                : 'scifi-button px-2 py-1 text-[11px] font-bold text-slate-400 border-slate-500/40 opacity-70';
+        }
 
         // Header Mode
         const modeTitle = document.getElementById('mode-title');
@@ -410,6 +489,41 @@ export class HUDManager {
             modeSub.textContent = 'EXODUS CLUSTER';
             modeTitle.textContent = 'COLORFUL SYSTEM MAP';
             btnMode.classList.add('hidden');
+        }
+
+        // Standalone SAO-Style Surface Vehicle Vitals HUD (Always Visible in Planet Mode)
+        const saoHud = document.getElementById('sao-vitals-hud');
+        if (saoHud) {
+            if (state.mode === 'surface') {
+                saoHud.classList.remove('hidden');
+                const stats = gameState.getEffectiveVehicleStats();
+                const hpPct = Math.max(0, Math.min(100, (state.mako.hull / stats.hp) * 100));
+                const boostPct = Math.max(0, Math.min(100, (state.mako.boostEnergy / state.mako.maxBoostEnergy) * 100));
+
+                const saoName = document.getElementById('sao-vehicle-name');
+                const saoHpText = document.getElementById('sao-hp-text');
+                const saoHpBar = document.getElementById('sao-hp-bar');
+                const saoBoostText = document.getElementById('sao-boost-text');
+                const saoBoostBar = document.getElementById('sao-boost-bar');
+
+                if (saoName) saoName.textContent = (stats?.name || 'MAKO M35 RECON').toUpperCase();
+                if (saoHpText) saoHpText.textContent = `${Math.round(state.mako.hull)} / ${stats.hp} HP`;
+                if (saoHpBar) {
+                    saoHpBar.style.width = `${hpPct}%`;
+                    if (hpPct < 25) {
+                        saoHpBar.className = 'h-full bg-gradient-to-r from-red-600 to-rose-400 rounded-sm transition-all duration-300 shadow-[0_0_10px_rgba(225,29,72,0.6)] w-full animate-pulse';
+                    } else if (hpPct < 55) {
+                        saoHpBar.className = 'h-full bg-gradient-to-r from-amber-500 to-yellow-300 rounded-sm transition-all duration-300 shadow-[0_0_10px_rgba(245,158,11,0.5)] w-full';
+                    } else {
+                        saoHpBar.className = 'h-full bg-gradient-to-r from-emerald-500 to-teal-300 rounded-sm transition-all duration-300 shadow-[0_0_10px_rgba(16,185,129,0.5)] w-full';
+                    }
+                }
+
+                if (saoBoostText) saoBoostText.textContent = `${Math.round(boostPct)}%`;
+                if (saoBoostBar) saoBoostBar.style.width = `${boostPct}%`;
+            } else {
+                saoHud.classList.add('hidden');
+            }
         }
 
         // Controls Box

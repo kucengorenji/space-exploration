@@ -36,7 +36,8 @@ class GameStateManager {
             },
             toasts: [],
             soundEnabled: true,
-            graphicsQuality: 'high' // 'high' | 'low'
+            graphicsQuality: 'high', // 'high' | 'low'
+            showHitboxes: false
         };
 
         this.listeners = new Set();
@@ -158,6 +159,7 @@ class GameStateManager {
         const vehicle = SURFACE_VEHICLES_DATA[this.state.surfaceVehicleType] || SURFACE_VEHICLES_DATA.mako;
         const upgrades = this.state.vehicleUpgrades || { hpBonus: 0, speedBonus: 0, damageBonus: 0 };
         return {
+            name: vehicle ? vehicle.name : 'Mako M35 Recon',
             hp: vehicle.baseHp + upgrades.hpBonus,
             damage: vehicle.baseDamage + upgrades.damageBonus,
             speedModifier: Math.min(100, Math.max(-100, vehicle.speedModifier + upgrades.speedBonus))
@@ -214,6 +216,15 @@ class GameStateManager {
     toggleSound() {
         this.state.soundEnabled = !this.state.soundEnabled;
         this.addToast(this.state.soundEnabled ? 'Audio Systems Online' : 'Audio Systems Muted', 'info');
+        this.notify();
+    }
+
+    toggleHitboxes() {
+        this.state.showHitboxes = !this.state.showHitboxes;
+        this.addToast(
+            this.state.showHitboxes ? '3D Hitbox Visualizer: ENABLED (Wireframes ON)' : '3D Hitbox Visualizer: DISABLED',
+            this.state.showHitboxes ? 'success' : 'info'
+        );
         this.notify();
     }
 

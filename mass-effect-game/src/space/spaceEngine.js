@@ -41,7 +41,7 @@ export class SpaceEngine {
             targetPos: null,
             rotation: 0,
             roll: 0,
-            maxSpeed: 1.5
+            maxSpeed: 0.75
         };
 
         this.keys = {};
@@ -426,12 +426,12 @@ export class SpaceEngine {
             moveDir.addScaledVector(camRight, sideInput);
             moveDir.normalize();
 
-            this.shipState.vel.addScaledVector(moveDir, 0.16);
+            this.shipState.vel.addScaledVector(moveDir, 0.045);
         } else if (this.shipState.targetPos) {
             const dist = this.shipState.pos.distanceTo(this.shipState.targetPos);
             if (dist > 2.0) {
                 const dir = new THREE.Vector3().subVectors(this.shipState.targetPos, this.shipState.pos).normalize();
-                this.shipState.vel.addScaledVector(dir, 0.16);
+                this.shipState.vel.addScaledVector(dir, 0.045);
             } else {
                 this.shipState.targetPos = null;
             }
@@ -440,7 +440,8 @@ export class SpaceEngine {
         if (this.shipState.vel.length() > this.shipState.maxSpeed) {
             this.shipState.vel.setLength(this.shipState.maxSpeed);
         }
-        this.shipState.vel.multiplyScalar(0.94);
+        // Vacuum Inertia Coasting Damping
+        this.shipState.vel.multiplyScalar(0.975);
         this.shipState.pos.add(this.shipState.vel);
 
         if (this.shipState.pos.length() > 290) {
@@ -449,20 +450,21 @@ export class SpaceEngine {
 
         this.shipMesh.position.copy(this.shipState.pos);
 
-        if (this.shipState.vel.length() > 0.05) {
+        if (this.shipState.vel.length() > 0.03) {
             const targetAngle = Math.atan2(this.shipState.vel.x, this.shipState.vel.z);
             let diff = targetAngle - this.shipState.rotation;
             while (diff < -Math.PI) diff += Math.PI * 2;
             while (diff > Math.PI) diff -= Math.PI * 2;
 
-            this.shipState.rotation += diff * 0.15;
+            // Smooth Frigate Rotation Yaw & Roll Banking
+            this.shipState.rotation += diff * 0.07;
             this.shipMesh.rotation.y = this.shipState.rotation;
 
-            const targetRoll = sideInput * 0.35;
-            this.shipState.roll = THREE.MathUtils.lerp(this.shipState.roll, targetRoll, 0.15);
+            const targetRoll = sideInput * 0.28;
+            this.shipState.roll = THREE.MathUtils.lerp(this.shipState.roll, targetRoll, 0.07);
             this.shipMesh.rotation.z = this.shipState.roll;
         } else {
-            this.shipState.roll = THREE.MathUtils.lerp(this.shipState.roll, 0, 0.15);
+            this.shipState.roll = THREE.MathUtils.lerp(this.shipState.roll, 0, 0.07);
             this.shipMesh.rotation.z = this.shipState.roll;
         }
     }
@@ -538,8 +540,44 @@ export class SpaceEngine {
         this.camera.position.lerp(targetCamPos, 0.08);
         this.camera.lookAt(this.shipState.pos.x, 0, this.shipState.pos.z);
 
+        this.updateHitboxVisualizers();
+
         this.renderer.render(this.scene, this.camera);
         return { prox, shipPos: this.shipState.pos, planets: this.planetMeshes };
+    }
+
+    updateHitboxVisualizers() {
+        if (!this.hitboxHelpersGroup) {
+            this.hitboxHelpersGroup = new THREE.Group();
+            this.scene.add(this.hitboxHelpersGroup);
+        }
+
+        // Clear existing helpers
+        while (this.hitboxHelpersGroup.children.length > 0) {
+            const child = this.hitboxHelpersGroup.children[0];
+            this.hitboxHelpersGroup.remove(child);
+            if (child.geometry) child.geometry.dispose();
+        }
+
+        if (!gameState.getState().showHitboxes) return;
+
+        // 1. Ship 3D Bounding Box
+        if (this.shipMesh) {
+            const shipBox = new THREE.BoxHelper(this.shipMesh, 0x10b981);
+            this.hitboxHelpersGroup.add(shipBox);
+        }
+
+        // 2. Planets 3D Bounding Spheres/Boxes
+        this.planetMeshes.forEach(p => {
+            const pBox = new THREE.BoxHelper(p.mesh, 0xf59e0b);
+            this.hitboxHelpersGroup.add(pBox);
+        });
+
+        // 3. Lasers 3D Bounding Boxes
+        this.lasers.forEach(l => {
+            const lBox = new THREE.BoxHelper(l.mesh, 0xef4444);
+            this.hitboxHelpersGroup.add(lBox);
+        });
     }
 
     destroy() {

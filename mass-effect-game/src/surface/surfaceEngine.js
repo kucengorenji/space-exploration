@@ -54,13 +54,13 @@ export class SurfaceEngine {
         this.makoState = {
             pos: new THREE.Vector3(0, 0, 0),
             speed: 0,
-            maxSpeed: 0.75,
-            accel: 0.02,
-            friction: 0.965,
+            maxSpeed: 0.22,
+            accel: 0.0035,
+            friction: 0.985,
             angle: 0,
             steerAngle: 0,
             targetSteerAngle: 0,
-            maxSteer: 0.038,
+            maxSteer: 0.035,
             jumpVel: 0,
             isGrounded: true
         };
@@ -170,6 +170,18 @@ export class SurfaceEngine {
         this.terrainMesh = new THREE.Mesh(geo, mat);
         this.terrainMesh.receiveShadow = true;
         this.scene.add(this.terrainMesh);
+
+        // Build Solid Underground Bedrock Base Skirt (Eliminates hollow space underneath terrain)
+        const skirtDepth = 35;
+        const skirtGeo = new THREE.BoxGeometry(size, skirtDepth, size);
+        const skirtMat = new THREE.MeshStandardMaterial({
+            color: 0x0f172a,
+            roughness: 0.95,
+            metalness: 0.1
+        });
+        this.bedrockSkirtMesh = new THREE.Mesh(skirtGeo, skirtMat);
+        this.bedrockSkirtMesh.position.set(0, -skirtDepth * 0.5 - 0.5, 0);
+        this.scene.add(this.bedrockSkirtMesh);
     }
 
     buildFortniteBoundaryWall() {
@@ -224,7 +236,8 @@ export class SurfaceEngine {
                 roughness: 0.08,
                 metalness: 0.85,
                 transparent: true,
-                opacity: 0.85
+                opacity: 0.55,
+                depthWrite: false
             });
             const water = new THREE.Mesh(lakeGeo, lakeMat);
             water.position.set(l.x, -1.4, l.z);
@@ -383,7 +396,7 @@ export class SurfaceEngine {
             }
 
             this.scene.add(treeGroup);
-            this.obstacles.push({ pos: new THREE.Vector3(tx, ty, tz), radius: 2.4, type: 'tree' });
+            this.obstacles.push({ pos: new THREE.Vector3(tx, ty, tz), radius: 2.4, type: 'tree', mesh: treeGroup });
         }
 
         // 2. SPAWN 50 BIOME ROCKS / CONTAINERS
@@ -405,12 +418,14 @@ export class SurfaceEngine {
                 crate.position.set(rx, ry + scale * 0.9, rz);
                 crate.castShadow = true;
                 this.scene.add(crate);
+                this.obstacles.push({ pos: new THREE.Vector3(rx, ry, rz), radius: 2.0 * scale, type: 'rock', mesh: crate });
             } else if (rockType === 0) {
                 const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(1, 1), rockSlateMat);
                 rock.position.set(rx, ry + scale * 0.4, rz);
                 rock.scale.set(scale, scale * 0.9, scale);
                 rock.castShadow = true;
                 this.scene.add(rock);
+                this.obstacles.push({ pos: new THREE.Vector3(rx, ry, rz), radius: 1.5 * scale, type: 'rock', mesh: rock });
             } else if (rockType === 1) {
                 const group = new THREE.Group();
                 group.position.set(rx, ry, rz);
@@ -421,19 +436,19 @@ export class SurfaceEngine {
                     group.add(spike);
                 }
                 this.scene.add(group);
+                this.obstacles.push({ pos: new THREE.Vector3(rx, ry, rz), radius: 2.0 * scale, type: 'rock', mesh: group });
             } else {
                 const group = new THREE.Group();
                 group.position.set(rx, ry, rz);
                 const colOffsets = [{ x: 0, z: 0, h: 4 }, { x: 1.2, z: 0.8, h: 3 }, { x: -1.2, z: 0.5, h: 3.5 }];
                 colOffsets.forEach(c => {
-                    const col = new THREE.Mesh(new THREE.CylinderGeometry(0.9, 0.9, c.h, 6), rockBasaltMat);
-                    col.position.set(c.x, c.h / 2, c.z);
+                    const col = new THREE.Mesh(new THREE.CylinderGeometry(0.8 * scale, 1.1 * scale, c.h * scale, 6), rockBasaltMat);
+                    col.position.set(c.x * scale * 0.7, (c.h * scale) * 0.5, c.z * scale * 0.7);
                     group.add(col);
                 });
                 this.scene.add(group);
+                this.obstacles.push({ pos: new THREE.Vector3(rx, ry, rz), radius: 2.2 * scale, type: 'rock', mesh: group });
             }
-
-            this.obstacles.push({ pos: new THREE.Vector3(rx, ry, rz), radius: scale * 0.9, type: 'rock' });
         }
     }
 
@@ -690,35 +705,58 @@ export class SurfaceEngine {
     }
 
     updateMakoPhysics() {
+        const effectiveStats = gameState.getEffectiveVehicleStats();
+        // Speed rating multiplier from vehicle traits & shop upgrades
+        const speedBonusFactor = 1.0 + (effectiveStats.speedModifier * 0.008);
+
         let accelInput = 0;
         if (this.keys['w'] || this.keys['arrowup']) accelInput += 1;
         if (this.keys['s'] || this.keys['arrowdown']) accelInput -= 1;
 
-        let topSpeed = this.makoState.maxSpeed;
+        let topSpeed = this.makoState.maxSpeed * speedBonusFactor;
         if (this.keys['shift']) {
-            topSpeed *= 1.55;
-            accelInput *= 1.35;
+            topSpeed *= 1.45;
+            accelInput *= 1.25;
         }
 
-        if (accelInput !== 0) {
-            this.makoState.speed += accelInput * this.makoState.accel;
-            this.makoState.speed = THREE.MathUtils.clamp(this.makoState.speed, -topSpeed * 0.45, topSpeed);
+        // Progressive GTA V Style Power & Acceleration Curve
+        const currentAbsSpeed = Math.abs(this.makoState.speed);
+        const speedRatio = currentAbsSpeed / topSpeed;
+
+        if (accelInput > 0) {
+            // Low-end torque -> smooth power band -> natural power taper
+            const torqueFactor = speedRatio < 0.2 ? 0.65 : speedRatio < 0.8 ? 1.0 : (1.0 - speedRatio * 0.55);
+            this.makoState.speed += accelInput * this.makoState.accel * torqueFactor;
+            this.makoState.speed = Math.min(this.makoState.speed, topSpeed);
+        } else if (accelInput < 0) {
+            if (this.makoState.speed > 0.02) {
+                // Active Responsive Brakes when moving forward
+                this.makoState.speed *= 0.92;
+            } else {
+                // Smooth Reverse Gear
+                this.makoState.speed += accelInput * this.makoState.accel * 0.6;
+                this.makoState.speed = Math.max(this.makoState.speed, -topSpeed * 0.45);
+            }
         } else {
+            // Smooth Coasting Inertia & Momentum
             this.makoState.speed *= this.makoState.friction;
         }
 
+        // Speed-Dependent Steering Angle (Tight maneuvering at low speed, wide smooth racing turns at high speed)
+        const steerSpeedFactor = 1.0 - Math.min(0.55, speedRatio * 0.55);
         let steerInput = 0;
         if (this.keys['a'] || this.keys['arrowleft']) steerInput += 1;
         if (this.keys['d'] || this.keys['arrowright']) steerInput -= 1;
 
-        this.makoState.targetSteerAngle = steerInput * this.makoState.maxSteer;
-        this.makoState.steerAngle = THREE.MathUtils.lerp(this.makoState.steerAngle, this.makoState.targetSteerAngle, 0.12);
+        this.makoState.targetSteerAngle = steerInput * this.makoState.maxSteer * steerSpeedFactor;
+        this.makoState.steerAngle = THREE.MathUtils.lerp(this.makoState.steerAngle, this.makoState.targetSteerAngle, 0.14);
 
         if (Math.abs(this.makoState.speed) > 0.005) {
             const dir = this.makoState.speed >= 0 ? 1 : -1;
             this.makoState.angle += this.makoState.steerAngle * dir;
         }
 
+        // Jump Thruster Boost
         const state = gameState.getState();
         if (this.keys[' '] && this.makoState.isGrounded && state.mako.boostEnergy > 25) {
             this.makoState.jumpVel = 0.72;
@@ -732,8 +770,20 @@ export class SurfaceEngine {
         }
 
         const forward = new THREE.Vector3(Math.sin(this.makoState.angle), 0, Math.cos(this.makoState.angle));
-        this.makoState.pos.addScaledVector(forward, this.makoState.speed);
+        const side = new THREE.Vector3(forward.z, 0, -forward.x);
 
+        // Lateral Drift / Slide Momentum (GTA V cornering feel)
+        if (!this.makoState.driftVel) this.makoState.driftVel = new THREE.Vector3();
+        if (Math.abs(this.makoState.steerAngle) > 0.015 && currentAbsSpeed > 0.25) {
+            const driftForce = (this.makoState.steerAngle > 0 ? 1 : -1) * currentAbsSpeed * 0.06;
+            this.makoState.driftVel.addScaledVector(side, driftForce);
+        }
+        this.makoState.driftVel.multiplyScalar(0.86); // Smooth grip recovery
+
+        this.makoState.pos.addScaledVector(forward, this.makoState.speed);
+        this.makoState.pos.add(this.makoState.driftVel);
+
+        // Boundary Limit Check
         const distFromCenter = Math.sqrt(this.makoState.pos.x ** 2 + this.makoState.pos.z ** 2);
         if (distFromCenter > 182) {
             const angle = Math.atan2(this.makoState.pos.z, this.makoState.pos.x);
@@ -750,7 +800,7 @@ export class SurfaceEngine {
         }
 
         const terrainY = this.getTerrainHeight(this.makoState.pos.x, this.makoState.pos.z);
-        if (terrainY < -1.0) this.makoState.speed *= 0.92;
+        if (terrainY < -1.0) this.makoState.speed *= 0.982;
 
         this.checkObstacleCollisions();
 
@@ -767,23 +817,35 @@ export class SurfaceEngine {
         this.makoGroup.position.copy(this.makoState.pos);
         this.makoGroup.rotation.y = this.makoState.angle;
 
-        const side = new THREE.Vector3(forward.z, 0, -forward.x);
+        // Terrain Slope & Centrifugal Chassis Roll (GTA V Body Lean into turns)
         const frontY = this.getTerrainHeight(this.makoState.pos.x + forward.x * 2.8, this.makoState.pos.z + forward.z * 2.8);
         const backY = this.getTerrainHeight(this.makoState.pos.x - forward.x * 2.8, this.makoState.pos.z - forward.z * 2.8);
         const leftY = this.getTerrainHeight(this.makoState.pos.x + side.x * 1.8, this.makoState.pos.z + side.z * 1.8);
         const rightY = this.getTerrainHeight(this.makoState.pos.x - side.x * 1.8, this.makoState.pos.z - side.z * 1.8);
 
-        const targetPitch = Math.atan2(frontY - backY, 5.6) * 0.7;
-        const targetRoll = Math.atan2(leftY - rightY, 3.6) * 0.5;
+        const targetPitch = Math.atan2(frontY - backY, 5.6);
+        // Centrifugal body roll when making sharp turns at speed (GTA V suspension feel!)
+        const centrifugalLean = (this.makoState.steerAngle / this.makoState.maxSteer) * (currentAbsSpeed / topSpeed) * 0.16;
+        const targetRoll = Math.atan2(leftY - rightY, 3.6) + centrifugalLean;
 
         if (this.makoBodyMesh) {
-            this.makoBodyMesh.rotation.x = THREE.MathUtils.lerp(this.makoBodyMesh.rotation.x, targetPitch, 0.15);
-            this.makoBodyMesh.rotation.z = THREE.MathUtils.lerp(this.makoBodyMesh.rotation.z, targetRoll, 0.15);
+            this.makoBodyMesh.rotation.x = THREE.MathUtils.lerp(this.makoBodyMesh.rotation.x, targetPitch, 0.2);
+            this.makoBodyMesh.rotation.z = THREE.MathUtils.lerp(this.makoBodyMesh.rotation.z, targetRoll, 0.2);
         }
 
+        // Precision Wheel Ground Tracking & Rotation
         this.makoWheels.forEach((w, idx) => {
-            w.rotation.x += this.makoState.speed * 0.75;
+            w.rotation.x += (this.makoState.speed / topSpeed) * 0.35;
             if (idx < 2) w.rotation.y = this.makoState.steerAngle * 4.0;
+
+            const wOffsetFront = idx < 2 ? 1.8 : idx < 4 ? 0 : -1.8;
+            const wOffsetSide = (idx % 2 === 0 ? 1 : -1) * 1.4;
+            const wx = this.makoState.pos.x + forward.x * wOffsetFront + side.x * wOffsetSide;
+            const wz = this.makoState.pos.z + forward.z * wOffsetFront + side.z * wOffsetSide;
+            const wheelGroundY = this.getTerrainHeight(wx, wz);
+            const relativeGroundY = wheelGroundY - this.makoState.pos.y;
+
+            w.position.y = THREE.MathUtils.lerp(w.position.y, relativeGroundY + 0.55, 0.35);
         });
 
         state.mako.speed = Math.abs(this.makoState.speed) * 120;
@@ -861,6 +923,8 @@ export class SurfaceEngine {
             this.skyDomeMesh.position.copy(this.makoState.pos);
         }
 
+        this.updateHitboxVisualizers();
+
         this.renderer.render(this.scene, this.camera);
         return {
             makoPos: this.makoState.pos,
@@ -868,8 +932,72 @@ export class SurfaceEngine {
             nodes: this.resourceNodes,
             obstacles: this.obstacles,
             lakes: this.lakes,
-            normandyPos: this.normandyLZGroup.position
+            normandyPos: this.normandyLZGroup ? this.normandyLZGroup.position : null
         };
+    }
+
+    updateHitboxVisualizers() {
+        if (!this.hitboxHelpersGroup) {
+            this.hitboxHelpersGroup = new THREE.Group();
+            this.scene.add(this.hitboxHelpersGroup);
+        }
+
+        // Clear existing helpers
+        while (this.hitboxHelpersGroup.children.length > 0) {
+            const child = this.hitboxHelpersGroup.children[0];
+            this.hitboxHelpersGroup.remove(child);
+            if (child.geometry) child.geometry.dispose();
+        }
+
+        if (!gameState.getState().showHitboxes) return;
+
+        // 1. Vehicle 3D Bounding Box
+        if (this.makoGroup) {
+            const vehBox = new THREE.BoxHelper(this.makoGroup, 0x10b981);
+            this.hitboxHelpersGroup.add(vehBox);
+        }
+
+        // 2. Normandy LZ Bounding Box
+        if (this.normandyLZGroup) {
+            const lzBox = new THREE.BoxHelper(this.normandyLZGroup, 0x06b6d4);
+            this.hitboxHelpersGroup.add(lzBox);
+        }
+
+        // 3. Resource Nodes Bounding Boxes
+        this.resourceNodes.forEach(n => {
+            if (n.active && n.mesh) {
+                const rBox = new THREE.BoxHelper(n.mesh, 0xa855f7);
+                this.hitboxHelpersGroup.add(rBox);
+            }
+        });
+
+        // 4. Obstacles & Trees & Rocks Bounding Boxes
+        if (this.obstacles) {
+            this.obstacles.forEach(ob => {
+                if (ob && ob.mesh) {
+                    const color = ob.type === 'tree' ? 0x22c55e : ob.type === 'rock' ? 0xf59e0b : 0x38bdf8;
+                    const obBox = new THREE.BoxHelper(ob.mesh, color);
+                    this.hitboxHelpersGroup.add(obBox);
+                }
+            });
+        }
+
+        // 5. Lasers 3D Bounding Boxes
+        this.lasers.forEach(l => {
+            if (l.mesh) {
+                const lBox = new THREE.BoxHelper(l.mesh, 0xef4444);
+                this.hitboxHelpersGroup.add(lBox);
+            }
+        });
+
+        // 6. Terrain Heightmap Wireframe Visualizer
+        if (this.terrainMesh && this.terrainMesh.geometry) {
+            const terrainWireMat = new THREE.MeshBasicMaterial({ color: 0x06b6d4, wireframe: true, transparent: true, opacity: 0.25 });
+            const terrainWireMesh = new THREE.Mesh(this.terrainMesh.geometry, terrainWireMat);
+            terrainWireMesh.position.copy(this.terrainMesh.position);
+            terrainWireMesh.position.y += 0.05;
+            this.hitboxHelpersGroup.add(terrainWireMesh);
+        }
     }
 
     destroy() {
