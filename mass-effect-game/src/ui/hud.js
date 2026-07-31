@@ -315,14 +315,18 @@ export class HUDManager {
 
         document.getElementById('btn-land-mako-modal').addEventListener('click', () => {
             if (this.modalPlanet) {
+                const planet = this.modalPlanet;
                 this.closeModal();
-                gameState.landOnPlanet(this.modalPlanet);
+                gameState.landOnPlanet(planet);
             }
         });
 
         document.getElementById('btn-land-mako-banner').addEventListener('click', () => {
             const planet = this.closestPlanetData;
-            if (planet) gameState.landOnPlanet(planet);
+            if (planet) {
+                this.closeModal();
+                gameState.landOnPlanet(planet);
+            }
         });
 
         document.getElementById('btn-enter-orbit').addEventListener('click', () => {
@@ -395,6 +399,7 @@ export class HUDManager {
         const btnMode = document.getElementById('btn-mode-action');
 
         if (state.mode === 'surface') {
+            this.closeModal();
             vesselIcon.className = 'fa-solid fa-truck-monster text-lg text-emerald-400';
             vesselSub.textContent = 'Surface Recon Vehicle Hangar';
             modeSub.textContent = 'CLEAR BLUE SKY & LAKES';
