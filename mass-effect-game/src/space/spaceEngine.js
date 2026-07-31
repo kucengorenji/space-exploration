@@ -567,6 +567,11 @@ export class SpaceEngine {
     update() {
         if (this.isDestroyed) return;
 
+        const gfxQuality = gameState.getState().graphicsQuality;
+        if (this.renderer && this.renderer.shadowMap.enabled !== (gfxQuality === 'high')) {
+            this.renderer.shadowMap.enabled = (gfxQuality === 'high');
+        }
+
         const desiredShipType = gameState.getState().shipType;
         if (desiredShipType !== this.currentShipType) {
             this.updateShipModel(desiredShipType);

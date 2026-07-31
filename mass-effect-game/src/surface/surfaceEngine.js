@@ -892,6 +892,11 @@ export class SurfaceEngine {
     update() {
         if (this.isDestroyed) return;
 
+        const gfxQuality = gameState.getState().graphicsQuality;
+        if (this.renderer && this.renderer.shadowMap.enabled !== (gfxQuality === 'high')) {
+            this.renderer.shadowMap.enabled = (gfxQuality === 'high');
+        }
+
         const desiredVehicle = gameState.getState().surfaceVehicleType;
         if (desiredVehicle !== this.currentVehicleType) {
             this.updateVehicleModel(desiredVehicle);

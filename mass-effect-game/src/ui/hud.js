@@ -64,7 +64,10 @@ export class HUDManager {
                         <span class="text-cyan-300 font-bold"><i class="fa-solid fa-shield-halved text-cyan-400"></i> <span id="hdr-iri">0</span></span>
                     </div>
                     <div class="h-8 w-px bg-cyan-500/20"></div>
-                    <button id="btn-sound-toggle" class="text-cyan-400 hover:text-white transition p-1">
+                    <button id="btn-gfx-toggle" class="text-cyan-400 hover:text-amber-300 transition p-1" title="Toggle Lighting & Shadow Quality">
+                        <i id="gfx-icon" class="fa-solid fa-sun text-lg text-amber-400"></i>
+                    </button>
+                    <button id="btn-sound-toggle" class="text-cyan-400 hover:text-white transition p-1" title="Toggle Sound Systems">
                         <i id="sound-icon" class="fa-solid fa-volume-high text-lg"></i>
                     </button>
                     <button id="btn-mode-action" class="hidden scifi-button px-3 py-1.5 text-xs font-bold text-cyan-200">
@@ -213,6 +216,10 @@ export class HUDManager {
             audioEngine.playPing();
         });
 
+        document.getElementById('btn-gfx-toggle').addEventListener('click', () => {
+            gameState.toggleGraphicsQuality();
+        });
+
         document.getElementById('btn-sound-toggle').addEventListener('click', () => {
             gameState.toggleSound();
         });
@@ -288,9 +295,16 @@ export class HUDManager {
         document.getElementById('hdr-palla').textContent = state.mode === 'surface' ? `+${state.mako.harvestedThisSession.palla}` : state.cargo.palla;
         document.getElementById('hdr-iri').textContent = state.mode === 'surface' ? `+${state.mako.harvestedThisSession.iri}` : state.cargo.iri;
 
-        // Sound Icon
+        // Sound & Graphics Icons
         const sIcon = document.getElementById('sound-icon');
-        sIcon.className = state.soundEnabled ? 'fa-solid fa-volume-high text-lg' : 'fa-solid fa-volume-xmark text-lg text-red-400';
+        if (sIcon) sIcon.className = state.soundEnabled ? 'fa-solid fa-volume-high text-lg' : 'fa-solid fa-volume-xmark text-lg text-red-400';
+
+        const gIcon = document.getElementById('gfx-icon');
+        if (gIcon) {
+            gIcon.className = state.graphicsQuality === 'high'
+                ? 'fa-solid fa-sun text-lg text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]'
+                : 'fa-solid fa-lightbulb text-lg text-slate-400 opacity-60';
+        }
 
         // Header Mode
         const modeTitle = document.getElementById('mode-title');

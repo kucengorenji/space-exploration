@@ -30,7 +30,8 @@ class GameStateManager {
                 harvestedThisSession: { eezo: 0, plat: 0, palla: 0, iri: 0 }
             },
             toasts: [],
-            soundEnabled: true
+            soundEnabled: true,
+            graphicsQuality: 'high' // 'high' | 'low'
         };
 
         this.listeners = new Set();
@@ -146,6 +147,15 @@ class GameStateManager {
         this.notify();
     }
 
+    toggleGraphicsQuality() {
+        this.state.graphicsQuality = this.state.graphicsQuality === 'high' ? 'low' : 'high';
+        this.addToast(
+            this.state.graphicsQuality === 'high' ? 'Graphics: HIGH (Shadows & Solar Glare ON)' : 'Graphics: PERFORMANCE (Shadows OFF / Max FPS)',
+            'info'
+        );
+        this.notify();
+    }
+
     addToast(message, type = 'info') {
         const id = Date.now() + Math.random();
         this.state.toasts.push({ id, message, type });
@@ -164,7 +174,8 @@ class GameStateManager {
                 normandy: this.state.normandy,
                 shipType: this.state.shipType,
                 surfaceVehicleType: this.state.surfaceVehicleType,
-                soundEnabled: this.state.soundEnabled
+                soundEnabled: this.state.soundEnabled,
+                graphicsQuality: this.state.graphicsQuality
             }));
         } catch(e) {}
     }
@@ -179,6 +190,7 @@ class GameStateManager {
                 if (parsed.shipType) this.state.shipType = parsed.shipType;
                 if (parsed.surfaceVehicleType) this.state.surfaceVehicleType = parsed.surfaceVehicleType;
                 if (parsed.soundEnabled !== undefined) this.state.soundEnabled = parsed.soundEnabled;
+                if (parsed.graphicsQuality) this.state.graphicsQuality = parsed.graphicsQuality;
             }
         } catch(e) {}
     }
