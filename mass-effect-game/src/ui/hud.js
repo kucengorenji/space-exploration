@@ -48,7 +48,11 @@ export class HUDManager {
                             <select id="vehicle-selector" class="bg-cyan-950/90 text-cyan-200 border border-cyan-500/40 rounded px-2 py-0.5 text-xs focus:outline-none focus:border-cyan-400 font-orbitron font-bold cursor-pointer max-w-[220px]">
                                 <!-- Dynamically populated based on Space or Surface mode -->
                             </select>
-                            <span class="text-[10px] px-2 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">ONLINE</span>
+                            <div class="flex items-center gap-1.5 text-[10px] font-mono text-cyan-300 bg-black/60 px-2 py-0.5 rounded border border-cyan-500/30">
+                                <span class="text-emerald-400 font-bold"><i class="fa-solid fa-gauge text-[9px] mr-0.5"></i><span id="telemetry-fps">60</span> FPS</span>
+                                <span class="text-cyan-500/40">|</span>
+                                <span class="text-sky-300 font-bold"><i class="fa-solid fa-wifi text-[9px] mr-0.5 text-sky-400"></i><span id="telemetry-ping">18</span> ms</span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -432,6 +436,19 @@ export class HUDManager {
 
         // Toasts
         this.renderToasts(state.toasts);
+    }
+
+    updateTelemetry(fps, pingMs) {
+        const fpsEl = document.getElementById('telemetry-fps');
+        const pingEl = document.getElementById('telemetry-ping');
+        if (fpsEl) {
+            fpsEl.textContent = fps;
+            fpsEl.parentElement.className = fps >= 45 ? 'text-emerald-400 font-bold' : fps >= 25 ? 'text-amber-400 font-bold' : 'text-rose-400 font-bold';
+        }
+        if (pingEl) {
+            pingEl.textContent = pingMs;
+            pingEl.parentElement.className = pingMs < 60 ? 'text-sky-300 font-bold' : pingMs < 150 ? 'text-amber-400 font-bold' : 'text-rose-400 font-bold';
+        }
     }
 
     renderToasts(toasts) {

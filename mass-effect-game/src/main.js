@@ -13,6 +13,10 @@ class App {
         this.appEl = document.getElementById('app');
         this.hud = new HUDManager(this.appEl);
         this.currentEngine = null;
+        this.frameCount = 0;
+        this.lastFpsUpdate = performance.now();
+        this.fps = 60;
+        this.pingMs = 18;
 
         this.init();
     }
@@ -56,6 +60,16 @@ class App {
 
     animate() {
         requestAnimationFrame(() => this.animate());
+
+        const now = performance.now();
+        this.frameCount++;
+        if (now >= this.lastFpsUpdate + 1000) {
+            this.fps = Math.round((this.frameCount * 1000) / (now - this.lastFpsUpdate));
+            this.frameCount = 0;
+            this.lastFpsUpdate = now;
+            this.pingMs = Math.round(15 + Math.random() * 8);
+            this.hud.updateTelemetry(this.fps, this.pingMs);
+        }
 
         if (this.currentEngine) {
             const res = this.currentEngine.update();
