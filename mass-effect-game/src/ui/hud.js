@@ -5,6 +5,7 @@
 import { gameState } from '../core/state.js';
 import { audioEngine } from '../core/audio.js';
 import { rouletteManager, getSpinsLeft } from './roulette.js';
+import { shopManager } from './shopModal.js';
 
 export class HUDManager {
     constructor(appContainer) {
@@ -59,12 +60,16 @@ export class HUDManager {
                 <!-- Cargo & Telemetry Bar -->
                 <div id="header-right-panel" class="scifi-panel p-3 px-5 flex items-center gap-4 pointer-events-auto">
                     <div id="cargo-pill" class="flex items-center gap-3 text-xs">
+                        <span class="text-amber-300 font-bold"><i class="fa-solid fa-coins text-amber-400"></i> <span id="hdr-credits">500</span> C</span>
                         <span class="text-purple-300 font-bold"><i class="fa-solid fa-atom text-purple-400"></i> <span id="hdr-eezo">0</span></span>
                         <span class="text-slate-200 font-bold"><i class="fa-solid fa-gem text-slate-300"></i> <span id="hdr-plat">0</span></span>
                         <span class="text-amber-300 font-bold"><i class="fa-solid fa-cubes text-amber-400"></i> <span id="hdr-palla">0</span></span>
                         <span class="text-cyan-300 font-bold"><i class="fa-solid fa-shield-halved text-cyan-400"></i> <span id="hdr-iri">0</span></span>
                     </div>
                     <div class="h-8 w-px bg-cyan-500/20"></div>
+                    <button id="btn-open-shop" class="scifi-button px-3 py-1.5 text-xs font-bold text-amber-300 border-amber-500/60 hover:text-white flex items-center gap-1.5" title="Open Space Shop">
+                        <i class="fa-solid fa-cart-shopping text-amber-400"></i> SHOP
+                    </button>
                     <button id="btn-gfx-toggle" class="text-cyan-400 hover:text-amber-300 transition p-1" title="Toggle Lighting & Shadow Quality">
                         <i id="gfx-icon" class="fa-solid fa-sun text-lg text-amber-400"></i>
                     </button>
@@ -222,6 +227,10 @@ export class HUDManager {
             audioEngine.playPing();
         });
 
+        document.getElementById('btn-open-shop').addEventListener('click', () => {
+            shopManager.open();
+        });
+
         document.getElementById('btn-gfx-toggle').addEventListener('click', () => {
             gameState.toggleGraphicsQuality();
         });
@@ -308,6 +317,14 @@ export class HUDManager {
         document.getElementById('hdr-plat').textContent = state.mode === 'surface' ? `+${state.mako.harvestedThisSession.plat}` : state.cargo.plat;
         document.getElementById('hdr-palla').textContent = state.mode === 'surface' ? `+${state.mako.harvestedThisSession.palla}` : state.cargo.palla;
         document.getElementById('hdr-iri').textContent = state.mode === 'surface' ? `+${state.mako.harvestedThisSession.iri}` : state.cargo.iri;
+        if (document.getElementById('hdr-credits')) {
+            document.getElementById('hdr-credits').textContent = state.credits;
+        }
+
+        const shopBtn = document.getElementById('btn-open-shop');
+        if (shopBtn) {
+            shopBtn.style.display = state.mode === 'space' ? 'inline-flex' : 'none';
+        }
 
         // Sound & Graphics Icons
         const sIcon = document.getElementById('sound-icon');

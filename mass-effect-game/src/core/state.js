@@ -13,7 +13,12 @@ class GameStateManager {
             mode: 'space', // 'space' | 'surface'
             activePlanet: PLANETS_DATA[0],
             shipType: 'normandy', // 'normandy' | 'interceptor' | 'dreadnought' | 'shadow'
-            surfaceVehicleType: 'mako', // 'mako' | 'hover_fighter' | 'apex_speeder' | 'titan_crawler'
+            credits: 500,
+            vehicleUpgrades: {
+                hpBonus: 0,
+                speedBonus: 0,
+                damageBonus: 0
+            },
             cargo: { ...DEFAULT_CARGO },
             normandy: {
                 probes: INITIAL_PROBES_COUNT,
@@ -147,6 +152,63 @@ class GameStateManager {
             this.state.cargo[type] += amount;
             this.notify();
         }
+    }
+
+    getEffectiveVehicleStats() {
+        const vehicle = SURFACE_VEHICLES_DATA[this.state.surfaceVehicleType] || SURFACE_VEHICLES_DATA.mako;
+        const upgrades = this.state.vehicleUpgrades || { hpBonus: 0, speedBonus: 0, damageBonus: 0 };
+        return {
+            hp: vehicle.baseHp + upgrades.hpBonus,
+            damage: vehicle.baseDamage + upgrades.damageBonus,
+            speedModifier: Math.min(100, Math.max(-100, vehicle.speedModifier + upgrades.speedBonus))
+        };
+    }
+
+    buyUpgrade(type) {
+        const costs = { hp: 100, speed: 120, damage: 150 };
+        const cost = costs[type];
+        if (!cost) return false;
+
+        if (this.state.credits < cost) {
+            this.addToast(`Insufficient Credits! Needed: ${cost} C`, 'warning');
+            return false;
+        }
+
+        this.state.credits -= cost;
+        if (!this.state.vehicleUpgrades) {
+            this.state.vehicleUpgrades = { hpBonus: 0, speedBonus: 0, damageBonus: 0 };
+        }
+
+        if (type === 'hp') {
+            this.state.vehicleUpgrades.hpBonus += 10;
+            this.addToast('Purchased Hull Armor Plating (+10 HP)!', 'success');
+        } else if (type === 'speed') {
+            this.state.vehicleUpgrades.speedBonus += 3;
+            this.addToast('Purchased Nitro Speed Thruster (+3 Speed Rating)!', 'success');
+        } else if (type === 'damage') {
+            this.state.vehicleUpgrades.damageBonus += 3;
+            this.addToast('Purchased Plasma Cannon Upgrade (+3 Damage)!', 'success');
+        }
+
+        this.notify();
+        return true;
+    }
+
+    sellResource(type, amount = 10) {
+        if (this.state.cargo[type] < amount) {
+            this.addToast(`Not enough ${type.toUpperCase()} in cargo to sell!`, 'warning');
+            return false;
+        }
+
+        const rates = { eezo: 10, plat: 6, palla: 8, iri: 7 };
+        const rate = rates[type] || 5;
+        const earned = amount * rate;
+
+        this.state.cargo[type] -= amount;
+        this.state.credits += earned;
+        this.addToast(`Sold ${amount} ${type.toUpperCase()} for +${earned} Credits!`, 'success');
+        this.notify();
+        return true;
     }
 
     toggleSound() {
