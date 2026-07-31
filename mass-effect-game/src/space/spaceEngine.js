@@ -320,7 +320,18 @@ export class SpaceEngine {
 
         audioEngine.playLaserShoot();
 
-        const forward = new THREE.Vector3(Math.sin(this.shipState.rotation), 0, Math.cos(this.shipState.rotation));
+        // Ship forward heading is (rotation + Math.PI)
+        const forwardDir = new THREE.Vector3(
+            Math.sin(this.shipState.rotation + Math.PI),
+            0,
+            Math.cos(this.shipState.rotation + Math.PI)
+        );
+
+        const sideDir = new THREE.Vector3(
+            Math.cos(this.shipState.rotation + Math.PI),
+            0,
+            -Math.sin(this.shipState.rotation + Math.PI)
+        );
 
         const offsets = [-1.4, 1.4];
         offsets.forEach(off => {
@@ -329,21 +340,22 @@ export class SpaceEngine {
             const laserMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
 
             const mesh = new THREE.Mesh(laserGeo, laserMat);
-            mesh.position.copy(this.shipState.pos);
-            mesh.position.x += Math.cos(this.shipState.rotation) * off;
-            mesh.position.z -= Math.sin(this.shipState.rotation) * off;
+            // Position laser at nose (+3.8 units ahead) and offset left/right
+            mesh.position.copy(this.shipState.pos)
+                .addScaledVector(forwardDir, 3.8)
+                .addScaledVector(sideDir, off);
 
             mesh.rotation.y = this.shipState.rotation + Math.PI;
 
             this.scene.add(mesh);
-            this.lasers.push({ mesh, dir: forward.clone(), dist: 0 });
+            this.lasers.push({ mesh, dir: forwardDir.clone(), dist: 0 });
         });
     }
 
     updateLasers() {
         for (let i = this.lasers.length - 1; i >= 0; i--) {
             const l = this.lasers[i];
-            l.mesh.position.addScaledVector(l.dir, -3.2);
+            l.mesh.position.addScaledVector(l.dir, 3.2);
             l.dist += 3.2;
 
             if (l.dist > 180) {
