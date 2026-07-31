@@ -501,16 +501,20 @@ export class SurfaceEngine {
 
     /* 🌌 Build 360° Panoramic Sky Dome Hemisphere */
     buildSkyDome() {
-        const skyTex = create360SkyDomeCanvasTexture(this.biome);
-        const skyGeo = new THREE.SphereGeometry(450, 64, 32);
-        const skyMat = new THREE.MeshBasicMaterial({
-            map: skyTex,
-            side: THREE.BackSide,
-            depthWrite: false
-        });
-        this.skyDomeMesh = new THREE.Mesh(skyGeo, skyMat);
-        this.skyDomeMesh.position.set(0, 0, 0);
-        this.scene.add(this.skyDomeMesh);
+        try {
+            const skyTex = create360SkyDomeCanvasTexture(this.biome);
+            const skyGeo = new THREE.SphereGeometry(450, 64, 32);
+            const skyMat = new THREE.MeshBasicMaterial({
+                map: skyTex,
+                side: THREE.BackSide,
+                depthWrite: false
+            });
+            this.skyDomeMesh = new THREE.Mesh(skyGeo, skyMat);
+            this.skyDomeMesh.position.set(0, 0, 0);
+            this.scene.add(this.skyDomeMesh);
+        } catch (err) {
+            console.warn('[SurfaceEngine] SkyDome creation fallback:', err);
+        }
         this.clouds = [];
     }
 
@@ -663,6 +667,8 @@ export class SurfaceEngine {
     }
 
     updateCameraRotation() {
+        const isUserRotating = this.isMouseDown || this.keys['i'] || this.keys['k'] || this.keys['j'] || this.keys['l'];
+
         if (this.keys['i']) {
             this.cameraPitch = Math.min(Math.PI / 2.2, this.cameraPitch + 0.025);
         }
@@ -674,6 +680,12 @@ export class SurfaceEngine {
         }
         if (this.keys['l']) {
             this.cameraYaw -= 0.03;
+        }
+
+        // Smoothly snap back to default chase camera behind vehicle when user releases controls
+        if (!isUserRotating) {
+            this.cameraYaw = THREE.MathUtils.lerp(this.cameraYaw, 0, 0.08);
+            this.cameraPitch = THREE.MathUtils.lerp(this.cameraPitch, 0.32, 0.08);
         }
     }
 

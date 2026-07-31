@@ -237,6 +237,15 @@ class GameStateManager {
         }, 3200);
     }
 
+    loadDossier(data = {}) {
+        if (data.credits !== undefined) this.state.credits = data.credits;
+        if (data.cargo) this.state.cargo = { ...this.state.cargo, ...data.cargo };
+        if (data.vehicleUpgrades) this.state.vehicleUpgrades = { ...this.state.vehicleUpgrades, ...data.vehicleUpgrades };
+        if (data.shipType) this.state.shipType = data.shipType;
+        if (data.surfaceVehicleType) this.state.surfaceVehicleType = data.surfaceVehicleType;
+        this.notify();
+    }
+
     saveState() {
         try {
             localStorage.setItem('mass_effect_state_v3', JSON.stringify({

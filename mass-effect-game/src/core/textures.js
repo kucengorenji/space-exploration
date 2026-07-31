@@ -431,6 +431,17 @@ export function createMetalPlatingCanvasTexture() {
     return texture;
 }
 
+// Helper to convert hex numbers (e.g. 0x38bdf8) or strings to valid Canvas CSS color strings
+function formatCssColor(col, defaultCss) {
+    if (typeof col === 'number') {
+        return '#' + col.toString(16).padStart(6, '0');
+    }
+    if (typeof col === 'string' && col.length > 0) {
+        return col.startsWith('#') || col.startsWith('rgb') ? col : '#' + col;
+    }
+    return defaultCss;
+}
+
 // 🌌 360° Panoramic Sky Dome Canvas Texture Generator for Biomes
 export function create360SkyDomeCanvasTexture(biome = {}) {
     const canvas = document.createElement('canvas');
@@ -438,10 +449,10 @@ export function create360SkyDomeCanvasTexture(biome = {}) {
     canvas.height = 1024;
     const ctx = canvas.getContext('2d');
 
-    const topColor = biome.skyTopColor || '#020617';
-    const midColor = biome.skyMidColor || '#0284c7';
-    const horizonColor = biome.skyHorizonColor || '#bae6fd';
-    const sunColor = biome.sunColor || '#fde047';
+    const topColor = formatCssColor(biome.skyTopColor || biome.skyColor, '#020617');
+    const midColor = formatCssColor(biome.skyMidColor || biome.skyColor, '#0284c7');
+    const horizonColor = formatCssColor(biome.skyHorizonColor || biome.fogColor, '#bae6fd');
+    const sunColor = formatCssColor(biome.sunColor, '#fde047');
 
     // 1. Base Vertical Sky & Horizon Gradient
     const skyGrad = ctx.createLinearGradient(0, 0, 0, 1024);

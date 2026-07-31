@@ -225,8 +225,8 @@ export class HUDManager {
                 </div>
             </div>
 
-            <!-- Toast Container -->
-            <div id="toast-container" class="fixed top-20 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+            <!-- Snackbar Toast Container (Bottom Center) -->
+            <div id="toast-container" class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex flex-col-reverse items-center gap-2 pointer-events-none max-w-lg w-full px-4"></div>
         `;
     }
 
@@ -456,11 +456,11 @@ export class HUDManager {
         container.innerHTML = '';
         toasts.forEach(t => {
             const div = document.createElement('div');
-            const colorClass = t.type === 'success' ? 'border-emerald-400 text-emerald-200 bg-emerald-950/90' :
-                             t.type === 'warning' ? 'border-amber-400 text-amber-200 bg-amber-950/90' :
-                             'border-cyan-400 text-cyan-200 bg-cyan-950/90';
-            div.className = `scifi-panel p-3 text-xs border ${colorClass} shadow-lg transition-all duration-300 flex items-center gap-2 pointer-events-auto`;
-            div.innerHTML = `<i class="fa-solid fa-circle-info text-sm"></i> <span>${t.message}</span>`;
+            const colorClass = t.type === 'success' ? 'border-emerald-400 text-emerald-200 bg-emerald-950/95 shadow-[0_0_20px_rgba(16,185,129,0.3)]' :
+                             t.type === 'warning' ? 'border-amber-400 text-amber-200 bg-amber-950/95 shadow-[0_0_20px_rgba(245,158,11,0.3)]' :
+                             'border-cyan-400 text-cyan-200 bg-cyan-950/95 shadow-[0_0_20px_rgba(56,189,248,0.3)]';
+            div.className = `scifi-panel px-5 py-2.5 text-xs border ${colorClass} backdrop-blur-md rounded-lg transition-all duration-300 flex items-center justify-center gap-2.5 pointer-events-auto text-center font-orbitron tracking-wide max-w-lg w-full shadow-2xl`;
+            div.innerHTML = `<i class="fa-solid fa-circle-info text-sm"></i> <span class="font-bold">${t.message}</span>`;
             container.appendChild(div);
         });
     }
