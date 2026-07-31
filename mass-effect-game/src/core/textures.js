@@ -431,3 +431,84 @@ export function createMetalPlatingCanvasTexture() {
     return texture;
 }
 
+// 🌌 360° Panoramic Sky Dome Canvas Texture Generator for Biomes
+export function create360SkyDomeCanvasTexture(biome = {}) {
+    const canvas = document.createElement('canvas');
+    canvas.width = 2048;
+    canvas.height = 1024;
+    const ctx = canvas.getContext('2d');
+
+    const topColor = biome.skyTopColor || '#020617';
+    const midColor = biome.skyMidColor || '#0284c7';
+    const horizonColor = biome.skyHorizonColor || '#bae6fd';
+    const sunColor = biome.sunColor || '#fde047';
+
+    // 1. Base Vertical Sky & Horizon Gradient
+    const skyGrad = ctx.createLinearGradient(0, 0, 0, 1024);
+    skyGrad.addColorStop(0.0, topColor);
+    skyGrad.addColorStop(0.45, midColor);
+    skyGrad.addColorStop(0.65, horizonColor);
+    skyGrad.addColorStop(1.0, topColor);
+    ctx.fillStyle = skyGrad;
+    ctx.fillRect(0, 0, 2048, 1024);
+
+    // 2. Distant Sun / Celestial Object Glow (360 Horizon Placement)
+    const sunX = 1400;
+    const sunY = 480;
+    const sunGrad = ctx.createRadialGradient(sunX, sunY, 10, sunX, sunY, 320);
+    sunGrad.addColorStop(0.0, '#ffffff');
+    sunGrad.addColorStop(0.15, sunColor);
+    sunGrad.addColorStop(0.5, 'rgba(253, 224, 71, 0.3)');
+    sunGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = sunGrad;
+    ctx.beginPath();
+    ctx.arc(sunX, sunY, 320, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 3. 360-Degree Panoramic Cloud Formations
+    const cloudColor = biome.cloudCanvasColor || 'rgba(255, 255, 255, 0.35)';
+    ctx.fillStyle = cloudColor;
+
+    for (let i = 0; i < 90; i++) {
+        const cx = (i * 24 + Math.sin(i * 3) * 50) % 2048;
+        const cy = 350 + Math.sin(i * 1.5) * 120;
+        const rx = 80 + Math.random() * 140;
+        const ry = 25 + Math.random() * 45;
+
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rx, ry, Math.random() * 0.2 - 0.1, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Secondary Soft Cloud Layer for Depth
+    ctx.fillStyle = biome.secondaryCloudColor || 'rgba(241, 245, 249, 0.2)';
+    for (let i = 0; i < 60; i++) {
+        const cx = (i * 35 + Math.cos(i * 2) * 80) % 2048;
+        const cy = 420 + Math.cos(i * 1.8) * 80;
+        const rx = 100 + Math.random() * 180;
+        const ry = 30 + Math.random() * 50;
+
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // 4. Stars in Zenith Sky (Upper 40% of Dome)
+    ctx.fillStyle = '#ffffff';
+    for (let i = 0; i < 400; i++) {
+        const sx = Math.random() * 2048;
+        const sy = Math.random() * 400;
+        const size = Math.random() * 1.8 + 0.5;
+        ctx.globalAlpha = Math.random() * 0.8 + 0.2;
+        ctx.beginPath();
+        ctx.arc(sx, sy, size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1.0;
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
+    return texture;
+}
+

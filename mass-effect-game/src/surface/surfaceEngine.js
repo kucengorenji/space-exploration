@@ -16,7 +16,8 @@ import {
     createSandCanvasTexture,
     createSnowCanvasTexture,
     createLavaRockCanvasTexture,
-    createMetalPlatingCanvasTexture
+    createMetalPlatingCanvasTexture,
+    create360SkyDomeCanvasTexture
 } from '../core/textures.js';
 
 export class SurfaceEngine {
@@ -131,7 +132,7 @@ export class SurfaceEngine {
         this.spawnObstacles();
         this.spawnSurfaceAssets();
         this.spawnResourceNodes();
-        this.spawnFloatingClouds();
+        this.buildSkyDome();
 
         this.setupEvents();
     }
@@ -498,30 +499,19 @@ export class SurfaceEngine {
         }
     }
 
-    /* ☁️ Spawn Drifting Volumetric Cloud Sprites */
-    spawnFloatingClouds() {
-        this.clouds = [];
-        const cloudTex = createCloudCanvasTexture();
-        const cloudMat = new THREE.SpriteMaterial({
-            map: cloudTex,
-            transparent: true,
-            opacity: this.biome.cloudOpacity,
-            color: this.biome.cloudColor
+    /* 🌌 Build 360° Panoramic Sky Dome Hemisphere */
+    buildSkyDome() {
+        const skyTex = create360SkyDomeCanvasTexture(this.biome);
+        const skyGeo = new THREE.SphereGeometry(450, 64, 32);
+        const skyMat = new THREE.MeshBasicMaterial({
+            map: skyTex,
+            side: THREE.BackSide,
+            depthWrite: false
         });
-
-        for (let i = 0; i < 25; i++) {
-            const sprite = new THREE.Sprite(cloudMat);
-            const scale = 25 + Math.random() * 40;
-            sprite.scale.set(scale * 2, scale, 1);
-
-            const cx = (Math.random() - 0.5) * 320;
-            const cz = (Math.random() - 0.5) * 320;
-            const cy = 35 + Math.random() * 25;
-
-            sprite.position.set(cx, cy, cz);
-            this.scene.add(sprite);
-            this.clouds.push({ sprite, speed: 0.04 + Math.random() * 0.06 });
-        }
+        this.skyDomeMesh = new THREE.Mesh(skyGeo, skyMat);
+        this.skyDomeMesh.position.set(0, 0, 0);
+        this.scene.add(this.skyDomeMesh);
+        this.clouds = [];
     }
 
     spawnResourceNodes() {
@@ -854,6 +844,10 @@ export class SurfaceEngine {
         this.checkResourceCollisions();
         this.updateLasers();
         this.updateCamera();
+
+        if (this.skyDomeMesh) {
+            this.skyDomeMesh.position.copy(this.makoState.pos);
+        }
 
         this.renderer.render(this.scene, this.camera);
         return {
