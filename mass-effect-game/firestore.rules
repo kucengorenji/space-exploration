@@ -1,0 +1,31 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is authenticated with allowed domains
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAuthorizedDomain() {
+      return isAuthenticated() &&
+        (request.auth.token.email.endsWith('@frisseblikken.com') ||
+         request.auth.token.email.endsWith('@fresh-forces.com'));
+    }
+
+    // Lobby & Room management
+    match /rooms/{roomId} {
+      allow read, write: if isAuthorizedDomain();
+
+      match /players/{uid} {
+        allow read, write: if isAuthorizedDomain();
+      }
+    }
+
+    // Leaderboards & EndGame Stats
+    match /leaderboard/{roomId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthorizedDomain();
+    }
+  }
+}

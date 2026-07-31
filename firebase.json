@@ -1,0 +1,23 @@
+{
+  "hosting": {
+    "public": "mass-effect-game/dist",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  },
+  "firestore": {
+    "rules": "mass-effect-game/firestore.rules",
+    "indexes": "mass-effect-game/firestore.indexes.json"
+  },
+  "database": {
+    "rules": "mass-effect-game/database.rules.json"
+  }
+}
