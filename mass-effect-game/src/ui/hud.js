@@ -60,41 +60,46 @@ export class HUDManager {
                     </div>
                 </div>
 
-                <!-- Cargo & Telemetry Bar -->
-                <div id="header-right-panel" class="scifi-panel p-3 px-5 flex items-center gap-4 pointer-events-auto">
-                    <div id="cargo-pill" class="flex items-center gap-3 text-xs">
+                <!-- Cargo & Telemetry Bar (2 Compact Stacked Rows) -->
+                <div id="header-right-panel" class="scifi-panel p-2.5 px-4 flex flex-col justify-center pointer-events-auto min-w-[280px]">
+                    <!-- Row 1: Cargo & Credits -->
+                    <div id="cargo-pill" class="flex items-center gap-3 text-[11px] justify-end border-b border-cyan-500/20 pb-1.5 mb-1.5">
                         <span class="text-amber-300 font-bold"><i class="fa-solid fa-coins text-amber-400"></i> <span id="hdr-credits">500</span> C</span>
                         <span class="text-purple-300 font-bold"><i class="fa-solid fa-atom text-purple-400"></i> <span id="hdr-eezo">0</span></span>
                         <span class="text-slate-200 font-bold"><i class="fa-solid fa-gem text-slate-300"></i> <span id="hdr-plat">0</span></span>
                         <span class="text-amber-300 font-bold"><i class="fa-solid fa-cubes text-amber-400"></i> <span id="hdr-palla">0</span></span>
                         <span class="text-cyan-300 font-bold"><i class="fa-solid fa-shield-halved text-cyan-400"></i> <span id="hdr-iri">0</span></span>
                     </div>
-                    <div class="h-8 w-px bg-cyan-500/20"></div>
-                    <button id="btn-open-profile" class="flex items-center gap-2 bg-cyan-950/80 border border-cyan-500/40 rounded px-2.5 py-1 hover:border-cyan-400 transition cursor-pointer" title="Open Pilot Dossier">
-                        <div class="w-6 h-6 rounded-full border border-cyan-400 flex items-center justify-center overflow-hidden bg-black/60">
-                            <img id="hdr-user-avatar" src="" class="w-full h-full object-cover hidden" alt="Avatar">
-                            <i id="hdr-user-icon" class="fa-solid fa-user-astronaut text-xs text-cyan-300"></i>
-                        </div>
-                        <div class="text-left hidden sm:block">
-                            <div id="hdr-user-name" class="text-[10px] font-orbitron font-bold text-white leading-none">COMMANDER</div>
-                            <div id="hdr-user-status" class="text-[9px] text-cyan-400 leading-none">GUEST</div>
-                        </div>
-                    </button>
-                    <button id="btn-open-login" class="scifi-button px-3 py-1.5 text-xs font-bold text-cyan-300 border-cyan-500/60 hover:text-white flex items-center gap-1.5" title="Multiplayer SSO Login">
-                        <i class="fa-solid fa-users text-cyan-400"></i> MULTIPLAYER
-                    </button>
-                    <button id="btn-open-shop" class="scifi-button px-3 py-1.5 text-xs font-bold text-amber-300 border-amber-500/60 hover:text-white flex items-center gap-1.5" title="Open Space Shop">
-                        <i class="fa-solid fa-cart-shopping text-amber-400"></i> SHOP
-                    </button>
-                    <button id="btn-gfx-toggle" class="text-cyan-400 hover:text-amber-300 transition p-1" title="Toggle Lighting & Shadow Quality">
-                        <i id="gfx-icon" class="fa-solid fa-sun text-lg text-amber-400"></i>
-                    </button>
-                    <button id="btn-sound-toggle" class="text-cyan-400 hover:text-white transition p-1" title="Toggle Sound Systems">
-                        <i id="sound-icon" class="fa-solid fa-volume-high text-lg"></i>
-                    </button>
-                    <button id="btn-mode-action" class="hidden scifi-button px-3 py-1.5 text-xs font-bold text-cyan-200">
-                        RETURN
-                    </button>
+
+                    <!-- Row 2: Profile, Multiplayer, Shop, Sound & Mode Actions -->
+                    <div class="flex items-center justify-end gap-2">
+                        <button id="btn-open-profile" class="flex items-center gap-1.5 bg-cyan-950/80 border border-cyan-500/40 rounded px-2 py-0.5 hover:border-cyan-400 transition cursor-pointer" title="Open Pilot Dossier">
+                            <div class="w-5 h-5 rounded-full border border-cyan-400 flex items-center justify-center overflow-hidden bg-black/60">
+                                <img id="hdr-user-avatar" src="" class="w-full h-full object-cover hidden" alt="Avatar">
+                                <i id="hdr-user-icon" class="fa-solid fa-user-astronaut text-[10px] text-cyan-300"></i>
+                            </div>
+                            <div class="text-left hidden sm:block">
+                                <div id="hdr-user-name" class="text-[9px] font-orbitron font-bold text-white leading-none">COMMANDER</div>
+                                <div id="hdr-user-status" class="text-[8px] text-cyan-400 leading-none">GUEST</div>
+                            </div>
+                        </button>
+
+                        <button id="btn-open-login" class="scifi-button px-2.5 py-1 text-[11px] font-bold text-cyan-300 border-cyan-500/60 hover:text-white flex items-center gap-1" title="Multiplayer SSO Login">
+                            <i class="fa-solid fa-users text-cyan-400"></i> MULTIPLAYER
+                        </button>
+
+                        <button id="btn-open-shop" class="scifi-button px-2.5 py-1 text-[11px] font-bold text-amber-300 border-amber-500/60 hover:text-white flex items-center gap-1" title="Open Space Shop">
+                            <i class="fa-solid fa-cart-shopping text-amber-400"></i> SHOP
+                        </button>
+
+                        <button id="btn-sound-toggle" class="text-cyan-400 hover:text-white transition px-1.5 py-1" title="Toggle Sound Systems">
+                            <i id="sound-icon" class="fa-solid fa-volume-high text-sm"></i>
+                        </button>
+
+                        <button id="btn-mode-action" class="hidden scifi-button px-2.5 py-1 text-[11px] font-bold text-cyan-200">
+                            RETURN
+                        </button>
+                    </div>
                 </div>
             </header>
 
@@ -281,10 +286,6 @@ export class HUDManager {
             }
         });
 
-        document.getElementById('btn-gfx-toggle').addEventListener('click', () => {
-            gameState.toggleGraphicsQuality();
-        });
-
         document.getElementById('btn-sound-toggle').addEventListener('click', () => {
             gameState.toggleSound();
         });
@@ -380,16 +381,9 @@ export class HUDManager {
             shopBtn.style.display = state.mode === 'space' ? 'inline-flex' : 'none';
         }
 
-        // Sound & Graphics Icons
+        // Sound Icon
         const sIcon = document.getElementById('sound-icon');
-        if (sIcon) sIcon.className = state.soundEnabled ? 'fa-solid fa-volume-high text-lg' : 'fa-solid fa-volume-xmark text-lg text-red-400';
-
-        const gIcon = document.getElementById('gfx-icon');
-        if (gIcon) {
-            gIcon.className = state.graphicsQuality === 'high'
-                ? 'fa-solid fa-sun text-lg text-amber-400 drop-shadow-[0_0_8px_rgba(245,158,11,0.6)]'
-                : 'fa-solid fa-lightbulb text-lg text-slate-400 opacity-60';
-        }
+        if (sIcon) sIcon.className = state.soundEnabled ? 'fa-solid fa-volume-high text-sm' : 'fa-solid fa-volume-xmark text-sm text-red-400';
 
         // Header Mode
         const modeTitle = document.getElementById('mode-title');
