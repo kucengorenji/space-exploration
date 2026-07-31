@@ -4,6 +4,7 @@
 
 import { gameState } from '../core/state.js';
 import { audioEngine } from '../core/audio.js';
+import { rouletteManager, getSpinsLeft } from './roulette.js';
 
 export class HUDManager {
     constructor(appContainer) {
@@ -183,6 +184,11 @@ export class HUDManager {
                         <div class="flex flex-wrap gap-3">
                             <button id="btn-land-mako-modal" class="scifi-button px-5 py-2 text-sm font-bold text-emerald-300 border-emerald-400 hover:text-white flex items-center gap-2"><i class="fa-solid fa-truck-monster text-amber-300"></i> DEPLOY VEHICLE [SPACE]</button>
                             <button id="btn-launch-probe" class="scifi-button px-5 py-2 text-sm font-bold text-white flex items-center gap-2"><i class="fa-solid fa-crosshairs"></i> LAUNCH PROBE [P]</button>
+                            <button id="btn-open-roulette" class="scifi-button px-5 py-2 text-sm font-bold flex items-center gap-2" style="border-color:rgba(245,158,11,.6);color:#fde68a;">
+                                <i class="fa-solid fa-dice" style="color:#f59e0b;"></i>
+                                <span id="roulette-btn-label">SPIN ROULETTE</span>
+                                <span id="roulette-spins-badge" class="text-[10px] px-1.5 py-0.5 rounded-full" style="background:rgba(245,158,11,.2);border:1px solid rgba(245,158,11,.4);color:#fbbf24;">5 LEFT</span>
+                            </button>
                             <button id="btn-leave-orbit" class="px-5 py-2 text-sm font-bold text-cyan-300 hover:text-white bg-cyan-950/60 border border-cyan-500/40 rounded transition">LEAVE ORBIT [Q]</button>
                         </div>
                     </div>
@@ -235,9 +241,17 @@ export class HUDManager {
 
         document.getElementById('btn-launch-probe').addEventListener('click', () => {
             if (gameState.launchProbe()) {
-                audioEngine.playProbeLaunch();
+                audioEngine.playPing();
                 if (this.modalPlanet) this.openModal(this.modalPlanet);
+                // Auto-open roulette after a successful probe launch
+                if (this.modalPlanet && getSpinsLeft(this.modalPlanet.name) > 0) {
+                    setTimeout(() => rouletteManager.open(this.modalPlanet.name), 350);
+                }
             }
+        });
+
+        document.getElementById('btn-open-roulette').addEventListener('click', () => {
+            if (this.modalPlanet) rouletteManager.open(this.modalPlanet.name);
         });
 
         document.getElementById('btn-land-mako-modal').addEventListener('click', () => {
@@ -421,6 +435,18 @@ export class HUDManager {
         this.setResBar('plat', planetData.resources.plat);
         this.setResBar('palla', planetData.resources.palla);
         this.setResBar('iri', planetData.resources.iri);
+
+        // Update roulette button badge
+        const spinsLeft = getSpinsLeft(planetData.name);
+        const badge = document.getElementById('roulette-spins-badge');
+        const rouletteBtn = document.getElementById('btn-open-roulette');
+        if (badge) badge.textContent = `${spinsLeft} LEFT`;
+        if (rouletteBtn) {
+            rouletteBtn.disabled  = spinsLeft <= 0;
+            rouletteBtn.style.opacity = spinsLeft <= 0 ? '0.35' : '1';
+            const lbl = document.getElementById('roulette-btn-label');
+            if (lbl) lbl.textContent = spinsLeft <= 0 ? 'ROULETTE USED' : 'SPIN ROULETTE';
+        }
 
         const modal = document.getElementById('planet-modal');
         modal.classList.remove('opacity-0', 'pointer-events-none', 'scale-95');

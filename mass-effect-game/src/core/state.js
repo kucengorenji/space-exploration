@@ -141,6 +141,14 @@ class GameStateManager {
         return true;
     }
 
+    /** Add an arbitrary amount of a single resource to cargo */
+    addCargo(type, amount) {
+        if (this.state.cargo[type] !== undefined && amount > 0) {
+            this.state.cargo[type] += amount;
+            this.notify();
+        }
+    }
+
     toggleSound() {
         this.state.soundEnabled = !this.state.soundEnabled;
         this.addToast(this.state.soundEnabled ? 'Audio Systems Online' : 'Audio Systems Muted', 'info');
