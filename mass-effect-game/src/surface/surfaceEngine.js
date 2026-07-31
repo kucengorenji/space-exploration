@@ -7,6 +7,7 @@ import * as THREE from 'three';
 import { gameState } from '../core/state.js';
 import { audioEngine } from '../core/audio.js';
 import { BIOMES_DATA } from '../data/biomes.js';
+import { createVehicleMesh, createTreeMesh } from '../factories/modelRegistry.js';
 import {
     createGrassCanvasTexture,
     createLeavesCanvasTexture,
@@ -260,134 +261,17 @@ export class SurfaceEngine {
             this.scene.remove(this.makoGroup);
         }
         this.currentVehicleType = type;
-        this.makoWheels = [];
 
-        const group = new THREE.Group();
-
-        if (type === 'hover_fighter') {
-            const bodyGeo = new THREE.ConeGeometry(2.2, 7.5, 6);
-            bodyGeo.rotateX(Math.PI / 2);
-            this.makoBodyMesh = new THREE.Mesh(bodyGeo, new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.95, roughness: 0.1 }));
-            this.makoBodyMesh.position.y = 2.2;
-            group.add(this.makoBodyMesh);
-
-            const wingGeo = new THREE.BoxGeometry(6.5, 0.2, 2.5);
-            const wings = new THREE.Mesh(wingGeo, new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.6 }));
-            wings.position.set(0, 2.2, 0);
-            group.add(wings);
-
-            const hoverRing1 = new THREE.Mesh(new THREE.TorusGeometry(1.4, 0.25, 12, 24), new THREE.MeshBasicMaterial({ color: 0x06b6d4 }));
-            hoverRing1.rotation.x = Math.PI / 2;
-            hoverRing1.position.set(-2.0, 1.0, 1.5);
-            group.add(hoverRing1);
-
-            const hoverRing2 = new THREE.Mesh(new THREE.TorusGeometry(1.4, 0.25, 12, 24), new THREE.MeshBasicMaterial({ color: 0x06b6d4 }));
-            hoverRing2.rotation.x = Math.PI / 2;
-            hoverRing2.position.set(2.0, 1.0, 1.5);
-            group.add(hoverRing2);
-
-            this.makoState.maxSpeed = 0.95;
-        } else if (type === 'apex_speeder') {
-            const bodyGeo = new THREE.BoxGeometry(2.4, 1.2, 5.8);
-            this.makoBodyMesh = new THREE.Mesh(bodyGeo, new THREE.MeshStandardMaterial({ color: 0xf97316, metalness: 0.8 }));
-            this.makoBodyMesh.position.y = 1.4;
-            group.add(this.makoBodyMesh);
-
-            const wheelGeo = new THREE.CylinderGeometry(1.1, 1.1, 0.8, 16);
-            wheelGeo.rotateZ(Math.PI / 2);
-            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x0f172a });
-
-            const frontWheel = new THREE.Mesh(wheelGeo, wheelMat);
-            frontWheel.position.set(0, 1.1, 2.4);
-            group.add(frontWheel);
-            this.makoWheels.push(frontWheel);
-
-            const rearLeft = new THREE.Mesh(wheelGeo, wheelMat);
-            rearLeft.position.set(-1.8, 1.1, -2.0);
-            group.add(rearLeft);
-            this.makoWheels.push(rearLeft);
-
-            const rearRight = new THREE.Mesh(wheelGeo, wheelMat);
-            rearRight.position.set(1.8, 1.1, -2.0);
-            group.add(rearRight);
-            this.makoWheels.push(rearRight);
-
-            this.makoState.maxSpeed = 1.1;
-        } else if (type === 'titan_crawler') {
-            const bodyGeo = new THREE.BoxGeometry(4.2, 2.2, 7.0);
-            this.makoBodyMesh = new THREE.Mesh(bodyGeo, new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.9, roughness: 0.3 }));
-            this.makoBodyMesh.position.y = 1.8;
-            group.add(this.makoBodyMesh);
-
-            const turret = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.6, 1.0, 16), new THREE.MeshStandardMaterial({ color: 0xf59e0b }));
-            turret.position.set(0, 3.1, -0.2);
-            group.add(turret);
-
-            const barrelGeo = new THREE.CylinderGeometry(0.25, 0.25, 4.0, 12);
-            barrelGeo.rotateX(Math.PI / 2);
-            const barrel = new THREE.Mesh(barrelGeo, new THREE.MeshStandardMaterial({ color: 0x0f172a }));
-            barrel.position.set(0, 3.3, 1.8);
-            group.add(barrel);
-
-            this.makoState.maxSpeed = 0.65;
-        } else {
-            const bodyGeo = new THREE.BoxGeometry(3.6, 1.8, 6.2);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.3, metalness: 0.85 });
-            this.makoBodyMesh = new THREE.Mesh(bodyGeo, bodyMat);
-            this.makoBodyMesh.position.y = 1.6;
-            this.makoBodyMesh.castShadow = true;
-            group.add(this.makoBodyMesh);
-
-            const cabinGeo = new THREE.BoxGeometry(2.8, 1.1, 2.5);
-            const cabinMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.1, metalness: 0.9, emissive: 0x0c4a6e });
-            const cabin = new THREE.Mesh(cabinGeo, cabinMat);
-            cabin.position.set(0, 2.3, 0.4);
-            group.add(cabin);
-
-            const turretMesh = new THREE.Group();
-            turretMesh.position.set(0, 2.7, -0.6);
-            turretMesh.add(new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.3, 0.7, 16), new THREE.MeshStandardMaterial({ color: 0x334155 })));
-
-            const barrelGeo = new THREE.CylinderGeometry(0.18, 0.18, 3.2, 12);
-            barrelGeo.rotateX(Math.PI / 2);
-            const barrelMat = new THREE.MeshStandardMaterial({ color: 0x64748b });
-
-            const barrel1 = new THREE.Mesh(barrelGeo, barrelMat);
-            barrel1.position.set(-0.35, 0.3, 1.4);
-            turretMesh.add(barrel1);
-
-            const barrel2 = new THREE.Mesh(barrelGeo, barrelMat);
-            barrel2.position.set(0.35, 0.3, 1.4);
-            turretMesh.add(barrel2);
-
-            group.add(turretMesh);
-
-            const wheelGeo = new THREE.CylinderGeometry(1.0, 1.0, 0.8, 18);
-            wheelGeo.rotateZ(Math.PI / 2);
-            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.9 });
-
-            const wheelOffsets = [
-                { x: -2.1, z: 2.1 }, { x: 2.1, z: 2.1 },
-                { x: -2.1, z: 0 }, { x: 2.1, z: 0 },
-                { x: -2.1, z: -2.1 }, { x: 2.1, z: -2.1 }
-            ];
-
-            wheelOffsets.forEach(off => {
-                const wheel = new THREE.Mesh(wheelGeo, wheelMat);
-                wheel.position.set(off.x, 1.0, off.z);
-                wheel.castShadow = true;
-                group.add(wheel);
-                this.makoWheels.push(wheel);
-            });
-
-            this.makoState.maxSpeed = 0.75;
-        }
+        const res = createVehicleMesh(type);
+        this.makoGroup = res.group;
+        this.makoBodyMesh = res.body;
+        this.makoWheels = res.wheels || [];
+        this.makoState.maxSpeed = res.maxSpeed || 0.75;
 
         const vehicleSpotLight = new THREE.PointLight(0xe0f2fe, 2.5, 30);
         vehicleSpotLight.position.set(0, 4, 0);
-        group.add(vehicleSpotLight);
+        this.makoGroup.add(vehicleSpotLight);
 
-        this.makoGroup = group;
         this.makoGroup.position.copy(this.makoState.pos);
         this.scene.add(this.makoGroup);
     }

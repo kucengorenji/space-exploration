@@ -7,6 +7,7 @@ import { gameState } from '../core/state.js';
 import { audioEngine } from '../core/audio.js';
 import { createPlanetCanvasTexture } from '../core/textures.js';
 import { PLANETS_DATA } from '../data/planets.js';
+import { createShipMesh } from '../factories/modelRegistry.js';
 
 export class SpaceEngine {
     constructor(containerEl, onPlanetSelect) {
@@ -246,120 +247,7 @@ export class SpaceEngine {
         }
         this.currentShipType = type;
 
-        const shipGroup = new THREE.Group();
-        const brightWhiteMat = new THREE.MeshStandardMaterial({ color: 0xf8fafc, metalness: 0.95, roughness: 0.08 });
-        const silverMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.98, roughness: 0.1 });
-        const cyanGlowMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.8, metalness: 0.9 });
-        const goldGlowMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, emissive: 0xd97706, emissiveIntensity: 0.8, metalness: 0.9 });
-
-        if (type === 'interceptor') {
-            const noseGeo = new THREE.ConeGeometry(1.2, 7.5, 8);
-            noseGeo.rotateX(Math.PI / 2);
-            const nose = new THREE.Mesh(noseGeo, silverMat);
-            nose.castShadow = true; nose.receiveShadow = true;
-            shipGroup.add(nose);
-
-            const deltaWings = new THREE.Mesh(new THREE.BoxGeometry(7.5, 0.2, 3.2), new THREE.MeshStandardMaterial({ color: 0xf97316, metalness: 0.85, roughness: 0.15 }));
-            deltaWings.position.set(0, 0, -1.0);
-            deltaWings.castShadow = true; deltaWings.receiveShadow = true;
-            shipGroup.add(deltaWings);
-
-            const twinEngine = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.7, 2.5, 12), brightWhiteMat);
-            twinEngine.rotation.x = Math.PI / 2;
-            twinEngine.position.set(0, 0, -3.2);
-            twinEngine.castShadow = true; twinEngine.receiveShadow = true;
-            shipGroup.add(twinEngine);
-
-            const flare = new THREE.Mesh(new THREE.SphereGeometry(0.5, 12, 12), new THREE.MeshBasicMaterial({ color: 0xffaa00 }));
-            flare.position.set(0, 0, -4.5);
-            shipGroup.add(flare);
-        } else if (type === 'dreadnought') {
-            const hullGeo = new THREE.BoxGeometry(3.2, 1.8, 8.0);
-            const hull = new THREE.Mesh(hullGeo, brightWhiteMat);
-            hull.castShadow = true; hull.receiveShadow = true;
-            shipGroup.add(hull);
-
-            const wings = new THREE.Mesh(new THREE.BoxGeometry(9.0, 0.4, 3.5), goldGlowMat);
-            wings.position.set(0, 0, -1.2);
-            wings.castShadow = true; wings.receiveShadow = true;
-            shipGroup.add(wings);
-
-            const turret1 = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.8, 3.5, 12), silverMat);
-            turret1.rotation.x = Math.PI / 2;
-            turret1.position.set(-1.2, 1.0, 1.5);
-            turret1.castShadow = true; turret1.receiveShadow = true;
-            shipGroup.add(turret1);
-
-            const turret2 = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.8, 3.5, 12), silverMat);
-            turret2.rotation.x = Math.PI / 2;
-            turret2.position.set(1.2, 1.0, 1.5);
-            turret2.castShadow = true; turret2.receiveShadow = true;
-            shipGroup.add(turret2);
-
-            const tripleEngines = [-1.4, 0, 1.4];
-            tripleEngines.forEach(x => {
-                const eng = new THREE.Mesh(new THREE.CylinderGeometry(0.45, 0.6, 2.2, 12), silverMat);
-                eng.rotation.x = Math.PI / 2;
-                eng.position.set(x, 0, -4.2);
-                eng.castShadow = true; eng.receiveShadow = true;
-                shipGroup.add(eng);
-            });
-        } else if (type === 'shadow') {
-            const wedgeGeo = new THREE.ConeGeometry(2.2, 7.0, 4);
-            wedgeGeo.rotateX(Math.PI / 2);
-            const wedge = new THREE.Mesh(wedgeGeo, cyanGlowMat);
-            wedge.castShadow = true; wedge.receiveShadow = true;
-            shipGroup.add(wedge);
-
-            const energyWings = new THREE.Mesh(new THREE.BoxGeometry(8.2, 0.15, 2.8), new THREE.MeshBasicMaterial({ color: 0x06b6d4 }));
-            energyWings.position.set(0, 0, -0.8);
-            shipGroup.add(energyWings);
-        } else {
-            const hullGeo = new THREE.ConeGeometry(1.6, 6.8, 8);
-            hullGeo.rotateX(Math.PI / 2);
-            const hull = new THREE.Mesh(hullGeo, brightWhiteMat);
-            hull.castShadow = true; hull.receiveShadow = true;
-            shipGroup.add(hull);
-
-            const canopyGeo = new THREE.BoxGeometry(0.8, 0.6, 1.8);
-            const canopy = new THREE.Mesh(canopyGeo, cyanGlowMat);
-            canopy.position.set(0, 0.7, 1.0);
-            canopy.castShadow = true; canopy.receiveShadow = true;
-            shipGroup.add(canopy);
-
-            const wingGeo = new THREE.BoxGeometry(6.5, 0.25, 2.4);
-            const wings = new THREE.Mesh(wingGeo, silverMat);
-            wings.position.set(0, 0, -0.6);
-            wings.castShadow = true; wings.receiveShadow = true;
-            shipGroup.add(wings);
-
-            const winglet1 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.4, 1.2), cyanGlowMat);
-            winglet1.position.set(-3.2, 0.5, -0.6);
-            winglet1.castShadow = true; winglet1.receiveShadow = true;
-            shipGroup.add(winglet1);
-
-            const winglet2 = new THREE.Mesh(new THREE.BoxGeometry(0.2, 1.4, 1.2), cyanGlowMat);
-            winglet2.position.set(3.2, 0.5, -0.6);
-            winglet2.castShadow = true; winglet2.receiveShadow = true;
-            shipGroup.add(winglet2);
-
-            const enginePos = [{ x: -1.2, y: 0 }, { x: 1.2, y: 0 }, { x: -0.6, y: 0.6 }, { x: 0.6, y: 0.6 }];
-            enginePos.forEach(p => {
-                const flare = new THREE.Mesh(new THREE.SphereGeometry(0.4, 12, 12), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
-                flare.position.set(p.x, p.y, -3.4);
-                shipGroup.add(flare);
-            });
-        }
-
-        const engineLight = new THREE.PointLight(0x38bdf8, 3.5, 30);
-        engineLight.position.set(0, 0, -3.5);
-        shipGroup.add(engineLight);
-
-        const vesselSpotLight = new THREE.PointLight(0xffffff, 2.5, 40);
-        vesselSpotLight.position.set(0, 3, 2);
-        shipGroup.add(vesselSpotLight);
-
-        this.shipMesh = shipGroup;
+        this.shipMesh = createShipMesh(type);
         this.shipMesh.position.copy(this.shipState.pos);
         this.scene.add(this.shipMesh);
     }
