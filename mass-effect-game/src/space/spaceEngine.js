@@ -274,6 +274,8 @@ export class SpaceEngine {
 
         this.onKeyUp = (e) => { this.keys[e.key.toLowerCase()] = false; };
 
+        this.isMouseDown = false;
+
         this.onPointerDown = (e) => {
             if (e.target.closest('.scifi-panel') || e.target.closest('#planet-modal') || e.target.tagName === 'BUTTON' || e.target.tagName === 'SELECT') return;
 
@@ -298,7 +300,28 @@ export class SpaceEngine {
                 }
 
                 this.shootLaser();
+            } else if (e.button === 2) {
+                this.isMouseDown = true;
+                this.prevMouseX = e.clientX;
+                this.prevMouseY = e.clientY;
             }
+        };
+
+        this.onPointerUp = () => { this.isMouseDown = false; };
+
+        this.onPointerMove = (e) => {
+            if (this.isMouseDown) {
+                const dx = e.clientX - this.prevMouseX;
+                const dy = e.clientY - this.prevMouseY;
+                this.cameraYaw -= dx * 0.005;
+                this.cameraPitch = Math.max(0.1, Math.min(Math.PI / 2.2, this.cameraPitch + dy * 0.005));
+                this.prevMouseX = e.clientX;
+                this.prevMouseY = e.clientY;
+            }
+        };
+
+        this.onWheel = (e) => {
+            this.cameraDistance = Math.max(40, Math.min(300, this.cameraDistance + e.deltaY * 0.1));
         };
 
         this.onResize = () => {
@@ -310,6 +333,9 @@ export class SpaceEngine {
         window.addEventListener('keydown', this.onKeyDown);
         window.addEventListener('keyup', this.onKeyUp);
         window.addEventListener('pointerdown', this.onPointerDown);
+        window.addEventListener('pointerup', this.onPointerUp);
+        window.addEventListener('pointermove', this.onPointerMove);
+        window.addEventListener('wheel', this.onWheel);
         window.addEventListener('resize', this.onResize);
     }
 

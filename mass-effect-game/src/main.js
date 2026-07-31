@@ -23,6 +23,9 @@ class App {
             this.switchEngine(state.mode);
         });
 
+        // Disable browser right-click context menu for smooth 3D camera controls
+        window.addEventListener('contextmenu', (e) => e.preventDefault());
+
         // Initialize starting mode
         this.switchEngine(gameState.getState().mode);
 
