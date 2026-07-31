@@ -12,7 +12,7 @@ export const GAME_CONFIG = {
         minPlayersToStart: 2,
     },
     auth: {
-        allowedDomains: ['frisseblikken.com', 'fresh-forces.com'],
+        allowedDomains: ['frisseblikken.com', 'fresh-forces.com', 'gmail.com'],
     },
     startingStats: {
         credits: 500,

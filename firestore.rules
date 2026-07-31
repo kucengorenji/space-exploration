@@ -10,7 +10,8 @@ service cloud.firestore {
     function isAuthorizedDomain() {
       return isAuthenticated() &&
         (request.auth.token.email.matches('.*@frisseblikken\\.com$') ||
-         request.auth.token.email.matches('.*@fresh-forces\\.com$'));
+         request.auth.token.email.matches('.*@fresh-forces\\.com$') ||
+         request.auth.token.email.matches('.*@gmail\\.com$'));
     }
 
     // Lobby & Room management

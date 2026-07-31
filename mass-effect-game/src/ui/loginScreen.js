@@ -40,9 +40,10 @@ export class LoginScreen {
                     <div class="text-[10px] text-amber-300 font-orbitron font-bold uppercase tracking-widest mb-1">
                         <i class="fa-solid fa-lock text-amber-400 mr-1"></i> Authorized Domains Only
                     </div>
-                    <div class="flex justify-center items-center gap-2 text-xs font-bold text-cyan-200">
+                    <div class="flex justify-center items-center gap-1.5 flex-wrap text-xs font-bold text-cyan-200">
                         <span class="bg-cyan-500/20 px-2 py-0.5 rounded border border-cyan-500/30">@frisseblikken.com</span>
                         <span class="bg-cyan-500/20 px-2 py-0.5 rounded border border-cyan-500/30">@fresh-forces.com</span>
+                        <span class="bg-cyan-500/20 px-2 py-0.5 rounded border border-cyan-500/30">@gmail.com</span>
                     </div>
                 </div>
 
