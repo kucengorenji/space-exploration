@@ -7,6 +7,8 @@ import { audioEngine } from '../core/audio.js';
 import { rouletteManager, getSpinsLeft } from './roulette.js';
 import { shopManager } from './shopModal.js';
 import { loginScreen } from './loginScreen.js';
+import { profileModal } from './profileModal.js';
+import { subscribeAuthState } from '../multiplayer/auth.js';
 
 export class HUDManager {
     constructor(appContainer) {
@@ -68,6 +70,16 @@ export class HUDManager {
                         <span class="text-cyan-300 font-bold"><i class="fa-solid fa-shield-halved text-cyan-400"></i> <span id="hdr-iri">0</span></span>
                     </div>
                     <div class="h-8 w-px bg-cyan-500/20"></div>
+                    <button id="btn-open-profile" class="flex items-center gap-2 bg-cyan-950/80 border border-cyan-500/40 rounded px-2.5 py-1 hover:border-cyan-400 transition cursor-pointer" title="Open Pilot Dossier">
+                        <div class="w-6 h-6 rounded-full border border-cyan-400 flex items-center justify-center overflow-hidden bg-black/60">
+                            <img id="hdr-user-avatar" src="" class="w-full h-full object-cover hidden" alt="Avatar">
+                            <i id="hdr-user-icon" class="fa-solid fa-user-astronaut text-xs text-cyan-300"></i>
+                        </div>
+                        <div class="text-left hidden sm:block">
+                            <div id="hdr-user-name" class="text-[10px] font-orbitron font-bold text-white leading-none">COMMANDER</div>
+                            <div id="hdr-user-status" class="text-[9px] text-cyan-400 leading-none">GUEST</div>
+                        </div>
+                    </button>
                     <button id="btn-open-login" class="scifi-button px-3 py-1.5 text-xs font-bold text-cyan-300 border-cyan-500/60 hover:text-white flex items-center gap-1.5" title="Multiplayer SSO Login">
                         <i class="fa-solid fa-users text-cyan-400"></i> MULTIPLAYER
                     </button>
@@ -212,6 +224,9 @@ export class HUDManager {
     setupSubscriptions() {
         gameState.subscribe(state => this.updateUI(state));
 
+        // Immediately sync UI on setup to populate initial vehicle options & controls box
+        this.updateUI(gameState.getState());
+
         // Shortcut Q to close modal
         window.addEventListener('keydown', (e) => {
             if (e.key.toLowerCase() === 'q' && this.modalPlanet) {
@@ -231,12 +246,39 @@ export class HUDManager {
             audioEngine.playPing();
         });
 
+        document.getElementById('btn-open-profile').addEventListener('click', () => {
+            profileModal.open();
+        });
+
         document.getElementById('btn-open-login').addEventListener('click', () => {
             loginScreen.open();
         });
 
         document.getElementById('btn-open-shop').addEventListener('click', () => {
             shopManager.open();
+        });
+
+        // Sync header profile badge with Firebase Auth state
+        subscribeAuthState((user) => {
+            const avatarImg = document.getElementById('hdr-user-avatar');
+            const avatarIcon = document.getElementById('hdr-user-icon');
+            const userName = document.getElementById('hdr-user-name');
+            const userStatus = document.getElementById('hdr-user-status');
+
+            if (user) {
+                if (avatarImg) {
+                    avatarImg.src = user.photoURL || '';
+                    avatarImg.classList.remove('hidden');
+                }
+                if (avatarIcon) avatarIcon.classList.add('hidden');
+                if (userName) userName.textContent = user.displayName?.split(' ')[0].toUpperCase() || 'PILOT';
+                if (userStatus) userStatus.textContent = 'ONLINE';
+            } else {
+                if (avatarImg) avatarImg.classList.add('hidden');
+                if (avatarIcon) avatarIcon.classList.remove('hidden');
+                if (userName) userName.textContent = 'COMMANDER';
+                if (userStatus) userStatus.textContent = 'GUEST';
+            }
         });
 
         document.getElementById('btn-gfx-toggle').addEventListener('click', () => {
