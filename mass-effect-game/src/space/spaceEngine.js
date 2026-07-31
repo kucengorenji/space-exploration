@@ -320,17 +320,17 @@ export class SpaceEngine {
 
         audioEngine.playLaserShoot();
 
-        // Ship forward heading is (rotation + Math.PI)
+        // Ship forward heading aligned with velocity direction
         const forwardDir = new THREE.Vector3(
-            Math.sin(this.shipState.rotation + Math.PI),
+            Math.sin(this.shipState.rotation),
             0,
-            Math.cos(this.shipState.rotation + Math.PI)
+            Math.cos(this.shipState.rotation)
         );
 
         const sideDir = new THREE.Vector3(
-            Math.cos(this.shipState.rotation + Math.PI),
+            Math.cos(this.shipState.rotation),
             0,
-            -Math.sin(this.shipState.rotation + Math.PI)
+            -Math.sin(this.shipState.rotation)
         );
 
         const offsets = [-1.4, 1.4];
@@ -345,7 +345,7 @@ export class SpaceEngine {
                 .addScaledVector(forwardDir, 3.8)
                 .addScaledVector(sideDir, off);
 
-            mesh.rotation.y = this.shipState.rotation + Math.PI;
+            mesh.rotation.y = this.shipState.rotation;
 
             this.scene.add(mesh);
             this.lasers.push({ mesh, dir: forwardDir.clone(), dist: 0 });
@@ -430,7 +430,7 @@ export class SpaceEngine {
             while (diff > Math.PI) diff -= Math.PI * 2;
 
             this.shipState.rotation += diff * 0.15;
-            this.shipMesh.rotation.y = this.shipState.rotation + Math.PI;
+            this.shipMesh.rotation.y = this.shipState.rotation;
 
             const targetRoll = sideInput * 0.35;
             this.shipState.roll = THREE.MathUtils.lerp(this.shipState.roll, targetRoll, 0.15);
