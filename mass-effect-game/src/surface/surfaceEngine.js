@@ -6,11 +6,16 @@
 import * as THREE from 'three';
 import { gameState } from '../core/state.js';
 import { audioEngine } from '../core/audio.js';
+import { BIOMES_DATA } from '../data/biomes.js';
 import {
     createGrassCanvasTexture,
     createLeavesCanvasTexture,
     createRockCanvasTexture,
-    createCloudCanvasTexture
+    createCloudCanvasTexture,
+    createSandCanvasTexture,
+    createSnowCanvasTexture,
+    createLavaRockCanvasTexture,
+    createMetalPlatingCanvasTexture
 } from '../core/textures.js';
 
 export class SurfaceEngine {
@@ -64,6 +69,10 @@ export class SurfaceEngine {
         this.cameraYaw = 0;
         this.isMouseDown = false;
 
+        const st = gameState.getState();
+        this.activePlanet = st.activePlanet || { id: 'aethel', name: 'AETHEL PRIME' };
+        this.biome = BIOMES_DATA[this.activePlanet.id] || BIOMES_DATA.aethel;
+
         this.init();
     }
 
@@ -90,8 +99,8 @@ export class SurfaceEngine {
 
     init() {
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x38bdf8);
-        this.scene.fog = new THREE.FogExp2(0xbae6fd, 0.0016);
+        this.scene.background = new THREE.Color(this.biome.skyColor);
+        this.scene.fog = new THREE.FogExp2(this.biome.fogColor, this.biome.fogDensity);
 
         this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
 
@@ -103,11 +112,11 @@ export class SurfaceEngine {
         this.container.appendChild(this.renderer.domElement);
 
         /* ARTIFICIAL LIGHTING SETUP */
-        const hemiLight = new THREE.HemisphereLight(0xe0f2fe, 0x15803d, 1.5);
+        const hemiLight = new THREE.HemisphereLight(this.biome.hemiLightSky, this.biome.hemiLightGround, this.biome.hemiIntensity);
         this.scene.add(hemiLight);
 
-        const sunLight = new THREE.DirectionalLight(0xfffbeb, 1.6);
-        sunLight.position.set(120, 180, 90);
+        const sunLight = new THREE.DirectionalLight(this.biome.sunColor, this.biome.sunIntensity);
+        sunLight.position.set(...this.biome.sunPosition);
         sunLight.castShadow = true;
         sunLight.shadow.mapSize.width = 2048;
         sunLight.shadow.mapSize.height = 2048;
@@ -140,12 +149,21 @@ export class SurfaceEngine {
         }
         geo.computeVertexNormals();
 
-        const grassTex = createGrassCanvasTexture();
+        const textureMap = {
+            createGrassCanvasTexture,
+            createSandCanvasTexture,
+            createSnowCanvasTexture,
+            createLavaRockCanvasTexture,
+            createMetalPlatingCanvasTexture
+        };
+        const texFn = textureMap[this.biome.groundTextureFn] || createGrassCanvasTexture;
+        const groundTex = texFn();
+
         const mat = new THREE.MeshStandardMaterial({
-            map: grassTex,
-            color: 0xffffff,
-            roughness: 0.75,
-            metalness: 0.1
+            map: groundTex,
+            color: this.biome.groundColor,
+            roughness: this.biome.groundRoughness,
+            metalness: this.biome.groundMetalness
         });
         this.terrainMesh = new THREE.Mesh(geo, mat);
         this.terrainMesh.receiveShadow = true;
@@ -192,15 +210,17 @@ export class SurfaceEngine {
     }
 
     buildLakes() {
+        if (!this.biome.hasLakes) return;
+
         this.lakes.forEach(l => {
             const lakeGeo = new THREE.CircleGeometry(l.r, 48);
             lakeGeo.rotateX(-Math.PI / 2);
             const lakeMat = new THREE.MeshStandardMaterial({
-                color: 0x0284c7,
-                emissive: 0x0369a1,
-                emissiveIntensity: 0.2,
-                roughness: 0.05,
-                metalness: 0.9,
+                color: this.biome.lakeColor,
+                emissive: this.biome.lakeEmissive,
+                emissiveIntensity: this.biome.lakeEmissiveIntensity,
+                roughness: 0.08,
+                metalness: 0.85,
                 transparent: true,
                 opacity: 0.85
             });
@@ -372,7 +392,7 @@ export class SurfaceEngine {
         this.scene.add(this.makoGroup);
     }
 
-    /* 🪨🍃 DYNAMIC OBSTACLES: 4 TREE TYPES & 3 ROCK TYPES */
+    /* 🪨🍃 DYNAMIC BIOME OBSTACLES: TREES & ROCKS */
     spawnObstacles() {
         this.obstacles = [];
 
@@ -385,12 +405,14 @@ export class SurfaceEngine {
         const foliageCypressMat = new THREE.MeshStandardMaterial({ map: leavesTex, color: 0x4ade80, roughness: 0.6 });
         const alienFungusMat = new THREE.MeshStandardMaterial({ color: 0x06b6d4, emissive: 0x0284c7, emissiveIntensity: 0.6, roughness: 0.2 });
 
+        // Biome Rock Materials
         const rockSlateMat = new THREE.MeshStandardMaterial({ map: rockTex, color: 0xffffff, roughness: 0.85 });
-        const rockSpikeMat = new THREE.MeshStandardMaterial({ color: 0x475569, roughness: 0.7, metalness: 0.3 });
-        const rockBasaltMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.8, metalness: 0.4 });
+        const rockSpikeMat = new THREE.MeshStandardMaterial({ color: this.biome.id === 'pyros' ? 0x18181b : this.biome.id === 'cryo' ? 0xe0f2fe : 0x475569, roughness: 0.6, metalness: 0.3 });
+        const rockBasaltMat = new THREE.MeshStandardMaterial({ color: this.biome.id === 'kronos' ? 0x78350f : this.biome.id === 'aegis' ? 0xb45309 : 0x1e293b, roughness: 0.8, metalness: 0.4 });
 
-        // 1. SPAWN 60 TREES (4 TYPES)
-        for (let i = 0; i < 60; i++) {
+        // 1. SPAWN BIOME TREES / TOWERS
+        const treeCount = this.biome.id === 'relay_hub' ? 30 : 55;
+        for (let i = 0; i < treeCount; i++) {
             const angle = Math.random() * Math.PI * 2;
             const dist = 32 + Math.random() * 138;
             const tx = Math.sin(angle) * dist;
@@ -399,62 +421,87 @@ export class SurfaceEngine {
 
             if (ty < -0.5) continue;
 
-            const treeType = i % 4; // 0: Pine, 1: Oak, 2: Cypress, 3: Alien Fungus
             const treeGroup = new THREE.Group();
             treeGroup.position.set(tx, ty, tz);
 
-            if (treeType === 0) { // 🌲 PINE CONIFER TREE
-                const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.8, 4, 8), trunkMat);
-                trunk.position.y = 2;
+            if (this.biome.treeType === 'volcanic_ash_stumps') {
+                // Scorched charred stumps
+                const stump = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.9, 4, 7), new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.95 }));
+                stump.position.y = 2;
+                treeGroup.add(stump);
+                const ember = new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 8), new THREE.MeshBasicMaterial({ color: 0xef4444 }));
+                ember.position.y = 3.8;
+                treeGroup.add(ember);
+            } else if (this.biome.treeType === 'frozen_crystal_spires') {
+                // Ice crystal trees
+                const iceSpire = new THREE.Mesh(new THREE.ConeGeometry(2.2, 9, 6), new THREE.MeshStandardMaterial({ color: 0xbae6fd, roughness: 0.1, metalness: 0.8, transparent: true, opacity: 0.9 }));
+                iceSpire.position.y = 4.5;
+                treeGroup.add(iceSpire);
+            } else if (this.biome.treeType === 'desert_cacti') {
+                // Cactus pillars
+                const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 0.7, 7, 8), new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.8 }));
+                trunk.position.y = 3.5;
                 treeGroup.add(trunk);
-
-                for (let tier = 0; tier < 3; tier++) {
-                    const cone = new THREE.Mesh(new THREE.ConeGeometry(3.2 - tier * 0.7, 4.5, 8), foliagePineMat);
-                    cone.position.y = 4.2 + tier * 2.6;
-                    treeGroup.add(cone);
+                const arm = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.4, 3, 6), new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.8 }));
+                arm.position.set(1.1, 4.2, 0);
+                arm.rotation.z = Math.PI / 4;
+                treeGroup.add(arm);
+            } else if (this.biome.treeType === 'tech_antennas') {
+                // Radio towers
+                const tower = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.8, 14, 6), new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.9, roughness: 0.2 }));
+                tower.position.y = 7;
+                treeGroup.add(tower);
+                const dish = new THREE.Mesh(new THREE.SphereGeometry(1.5, 8, 8, 0, Math.PI), new THREE.MeshBasicMaterial({ color: 0x06b6d4, side: THREE.DoubleSide }));
+                dish.position.y = 12;
+                dish.rotation.x = Math.PI / 3;
+                treeGroup.add(dish);
+            } else {
+                // Garden Lush Trees (4 types)
+                const treeType = i % 4;
+                if (treeType === 0) {
+                    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.8, 4, 8), trunkMat);
+                    trunk.position.y = 2;
+                    treeGroup.add(trunk);
+                    for (let tier = 0; tier < 3; tier++) {
+                        const cone = new THREE.Mesh(new THREE.ConeGeometry(3.2 - tier * 0.7, 4.5, 8), foliagePineMat);
+                        cone.position.y = 4.2 + tier * 2.6;
+                        treeGroup.add(cone);
+                    }
+                } else if (treeType === 1) {
+                    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 1.1, 4.5, 8), trunkMat);
+                    trunk.position.y = 2.25;
+                    treeGroup.add(trunk);
+                    const offsets = [{ x: 0, y: 5.5, z: 0, r: 2.8 }, { x: -1.2, y: 4.8, z: 0.8, r: 2.1 }, { x: 1.2, y: 4.8, z: -0.8, r: 2.1 }];
+                    offsets.forEach(off => {
+                        const canopy = new THREE.Mesh(new THREE.SphereGeometry(off.r, 12, 12), foliageOakMat);
+                        canopy.position.set(off.x, off.y, off.z);
+                        treeGroup.add(canopy);
+                    });
+                } else if (treeType === 2) {
+                    const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 5, 8), trunkMat);
+                    trunk.position.y = 2.5;
+                    treeGroup.add(trunk);
+                    const tallCone = new THREE.Mesh(new THREE.ConeGeometry(1.8, 9, 8), foliageCypressMat);
+                    tallCone.position.y = 6.5;
+                    treeGroup.add(tallCone);
+                } else {
+                    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.9, 5, 12), new THREE.MeshStandardMaterial({ color: 0x0e7490 }));
+                    stem.position.y = 2.5;
+                    treeGroup.add(stem);
+                    const cap = new THREE.Mesh(new THREE.ConeGeometry(3.6, 2.5, 16), alienFungusMat);
+                    cap.position.y = 5.2;
+                    treeGroup.add(cap);
+                    const spore = new THREE.Mesh(new THREE.SphereGeometry(0.8, 12, 12), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
+                    spore.position.y = 4.2;
+                    treeGroup.add(spore);
                 }
-            } else if (treeType === 1) { // 🌳 BROAD CANOPY OAK TREE
-                const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.7, 1.1, 4.5, 8), trunkMat);
-                trunk.position.y = 2.25;
-                treeGroup.add(trunk);
-
-                const offsets = [
-                    { x: 0, y: 5.5, z: 0, r: 2.8 },
-                    { x: -1.2, y: 4.8, z: 0.8, r: 2.1 },
-                    { x: 1.2, y: 4.8, z: -0.8, r: 2.1 }
-                ];
-                offsets.forEach(off => {
-                    const canopy = new THREE.Mesh(new THREE.SphereGeometry(off.r, 12, 12), foliageOakMat);
-                    canopy.position.set(off.x, off.y, off.z);
-                    treeGroup.add(canopy);
-                });
-            } else if (treeType === 2) { // 🌿 CYPRESS TALL NEEDLE TREE
-                const trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.6, 5, 8), trunkMat);
-                trunk.position.y = 2.5;
-                treeGroup.add(trunk);
-
-                const tallCone = new THREE.Mesh(new THREE.ConeGeometry(1.8, 9, 8), foliageCypressMat);
-                tallCone.position.y = 6.5;
-                treeGroup.add(tallCone);
-            } else { // 🍄 ALIEN BIOLUMINESCENT FUNGUS TREE
-                const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.6, 0.9, 5, 12), new THREE.MeshStandardMaterial({ color: 0x0e7490 }));
-                stem.position.y = 2.5;
-                treeGroup.add(stem);
-
-                const cap = new THREE.Mesh(new THREE.ConeGeometry(3.6, 2.5, 16), alienFungusMat);
-                cap.position.y = 5.2;
-                treeGroup.add(cap);
-
-                const spore = new THREE.Mesh(new THREE.SphereGeometry(0.8, 12, 12), new THREE.MeshBasicMaterial({ color: 0x38bdf8 }));
-                spore.position.y = 4.2;
-                treeGroup.add(spore);
             }
 
             this.scene.add(treeGroup);
             this.obstacles.push({ pos: new THREE.Vector3(tx, ty, tz), radius: 2.4, type: 'tree' });
         }
 
-        // 2. SPAWN 50 ROCKS (3 TYPES)
+        // 2. SPAWN 50 BIOME ROCKS / CONTAINERS
         for (let i = 0; i < 50; i++) {
             const angle = Math.random() * Math.PI * 2;
             const dist = 30 + Math.random() * 135;
@@ -464,16 +511,22 @@ export class SurfaceEngine {
 
             if (ry < -0.5) continue;
 
-            const rockType = i % 3; // 0: Slate Boulder, 1: Spike Cluster, 2: Basalt Hexagon Columns
+            const rockType = i % 3;
             const scale = 1.8 + Math.random() * 2.5;
 
-            if (rockType === 0) { // 🪨 SLATE CRAGGY BOULDER
+            if (this.biome.rockType === 'tech_containers') {
+                // Tech cargo containers
+                const crate = new THREE.Mesh(new THREE.BoxGeometry(2.5 * scale, 1.8 * scale, 2.5 * scale), new THREE.MeshStandardMaterial({ color: i % 2 === 0 ? 0x0284c7 : 0x475569, metalness: 0.8, roughness: 0.3 }));
+                crate.position.set(rx, ry + scale * 0.9, rz);
+                crate.castShadow = true;
+                this.scene.add(crate);
+            } else if (rockType === 0) {
                 const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(1, 1), rockSlateMat);
                 rock.position.set(rx, ry + scale * 0.4, rz);
                 rock.scale.set(scale, scale * 0.9, scale);
                 rock.castShadow = true;
                 this.scene.add(rock);
-            } else if (rockType === 1) { // ⛰️ JAGGED SHARP ROCK SPIKES
+            } else if (rockType === 1) {
                 const group = new THREE.Group();
                 group.position.set(rx, ry, rz);
                 for (let k = 0; k < 3; k++) {
@@ -483,7 +536,7 @@ export class SurfaceEngine {
                     group.add(spike);
                 }
                 this.scene.add(group);
-            } else { // 🏛️ BLOCKY BASALT HEXAGONAL COLUMNS
+            } else {
                 const group = new THREE.Group();
                 group.position.set(rx, ry, rz);
                 const colOffsets = [{ x: 0, z: 0, h: 4 }, { x: 1.2, z: 0.8, h: 3 }, { x: -1.2, z: 0.5, h: 3.5 }];
@@ -499,13 +552,13 @@ export class SurfaceEngine {
         }
     }
 
-    /* 🌿🏛️ SURFACE TERRAIN ASSETS (Bushes, Ancient Prothean Monoliths, Glowing Crystal Sprouts) */
+    /* 🌿🏛️ SURFACE TERRAIN ASSETS (Bushes, Monoliths, Crystals, Tech Relays) */
     spawnSurfaceAssets() {
-        const bushMat = new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.8 });
+        const bushMat = new THREE.MeshStandardMaterial({ color: this.biome.id === 'aegis' ? 0x92400e : 0x15803d, roughness: 0.8 });
         const relicMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.95, roughness: 0.1 });
-        const runeGlowMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+        const runeGlowMat = new THREE.MeshBasicMaterial({ color: this.biome.id === 'pyros' ? 0xff4500 : 0x38bdf8 });
 
-        // 1. Wild Bush Patches (Asset Type 1)
+        // 1. Wild Bushes / Debris
         for (let i = 0; i < 40; i++) {
             const angle = Math.random() * Math.PI * 2;
             const dist = 25 + Math.random() * 140;
@@ -520,7 +573,7 @@ export class SurfaceEngine {
             this.scene.add(bush);
         }
 
-        // 2. Ancient Prothean Relic Obelisks (Asset Type 2)
+        // 2. Ancient Prothean Relic Obelisks
         for (let i = 0; i < 12; i++) {
             const angle = (i / 12) * Math.PI * 2 + 0.3;
             const dist = 55 + Math.random() * 100;
@@ -545,7 +598,7 @@ export class SurfaceEngine {
             this.obstacles.push({ pos: new THREE.Vector3(ox, oy, oz), radius: 1.8, type: 'relic' });
         }
 
-        // 3. Glowing Mineral Crystal Sprouts (Asset Type 3)
+        // 3. Glowing Mineral Crystal Sprouts
         for (let i = 0; i < 25; i++) {
             const angle = Math.random() * Math.PI * 2;
             const dist = 28 + Math.random() * 130;
@@ -554,7 +607,8 @@ export class SurfaceEngine {
             const cy = this.getTerrainHeight(cx, cz);
             if (cy < -0.5) continue;
 
-            const sprout = new THREE.Mesh(new THREE.OctahedronGeometry(0.9, 0), new THREE.MeshStandardMaterial({ color: 0x38bdf8, emissive: 0x0284c7, emissiveIntensity: 0.6 }));
+            const crystalColor = this.biome.id === 'pyros' ? 0xef4444 : this.biome.id === 'kronos' ? 0xf59e0b : 0x38bdf8;
+            const sprout = new THREE.Mesh(new THREE.OctahedronGeometry(0.9, 0), new THREE.MeshStandardMaterial({ color: crystalColor, emissive: crystalColor, emissiveIntensity: 0.6 }));
             sprout.position.set(cx, cy + 0.6, cz);
             this.scene.add(sprout);
         }
@@ -567,8 +621,8 @@ export class SurfaceEngine {
         const cloudMat = new THREE.SpriteMaterial({
             map: cloudTex,
             transparent: true,
-            opacity: 0.85,
-            color: 0xffffff
+            opacity: this.biome.cloudOpacity,
+            color: this.biome.cloudColor
         });
 
         for (let i = 0; i < 25; i++) {

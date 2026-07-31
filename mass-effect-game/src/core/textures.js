@@ -270,3 +270,164 @@ export function createPlanetCanvasTexture(type) {
     texture.wrapT = THREE.ClampToEdgeWrapping;
     return texture;
 }
+
+// 🏜️ Sand Dunes Canvas Texture (for Aegis Desert)
+export function createSandCanvasTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    // Base Sand Color
+    ctx.fillStyle = '#d97706';
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Sand dune ripple waves
+    ctx.strokeStyle = '#b45309';
+    ctx.lineWidth = 4;
+    for (let y = 0; y < 512; y += 16) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        for (let x = 0; x <= 512; x += 32) {
+            ctx.lineTo(x, y + Math.sin(x * 0.05) * 6);
+        }
+        ctx.stroke();
+    }
+
+    // Faint golden sand specks
+    ctx.fillStyle = '#fef08a';
+    for (let i = 0; i < 1500; i++) {
+        ctx.fillRect(Math.random() * 512, Math.random() * 512, 2, 2);
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(32, 32);
+    return texture;
+}
+
+// ❄️ Snow / Ice Crust Canvas Texture (for Glacies IX)
+export function createSnowCanvasTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = '#f0f9ff';
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Ice crystal cracks & shadows
+    ctx.strokeStyle = '#bae6fd';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 40; i++) {
+        ctx.beginPath();
+        let x = Math.random() * 512;
+        let y = Math.random() * 512;
+        ctx.moveTo(x, y);
+        for (let j = 0; j < 4; j++) {
+            x += (Math.random() - 0.5) * 60;
+            y += (Math.random() - 0.5) * 40;
+            ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    }
+
+    // Shimmering ice specks
+    ctx.fillStyle = '#ffffff';
+    for (let i = 0; i < 2000; i++) {
+        ctx.fillRect(Math.random() * 512, Math.random() * 512, 1.5, 1.5);
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(32, 32);
+    return texture;
+}
+
+// 🌋 Lava Basalt Rock Canvas Texture (for Pyros IV & Kronos Moon)
+export function createLavaRockCanvasTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    // Black Basalt Ground
+    ctx.fillStyle = '#18181b';
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Dark charcoal patches
+    ctx.fillStyle = '#27272a';
+    for (let i = 0; i < 50; i++) {
+        ctx.beginPath();
+        ctx.arc(Math.random() * 512, Math.random() * 512, 15 + Math.random() * 35, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Glowing magma crack veins
+    for (let i = 0; i < 35; i++) {
+        ctx.strokeStyle = Math.random() > 0.4 ? '#dc2626' : '#f97316';
+        ctx.lineWidth = 1.5 + Math.random() * 3;
+        ctx.beginPath();
+        let x = Math.random() * 512;
+        let y = Math.random() * 512;
+        ctx.moveTo(x, y);
+        for (let j = 0; j < 5; j++) {
+            x += (Math.random() - 0.5) * 70;
+            y += (Math.random() - 0.5) * 50;
+            ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(32, 32);
+    return texture;
+}
+
+// 🛸 Sci-Fi Metal Deck Plating Canvas Texture (for Hestia Relay Station)
+export function createMetalPlatingCanvasTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 512;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, 0, 512, 512);
+
+    // Grid panels
+    ctx.strokeStyle = '#334155';
+    ctx.lineWidth = 4;
+    for (let x = 0; x <= 512; x += 64) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 512); ctx.stroke();
+    }
+    for (let y = 0; y <= 512; y += 64) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(512, y); ctx.stroke();
+    }
+
+    // Neon cyan floor circuit lines
+    ctx.strokeStyle = '#06b6d4';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 8; i++) {
+        const x = i * 64 + 32;
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 512); ctx.stroke();
+    }
+
+    // Rivet dots at panel corners
+    ctx.fillStyle = '#94a3b8';
+    for (let x = 0; x <= 512; x += 64) {
+        for (let y = 0; y <= 512; y += 64) {
+            ctx.beginPath(); ctx.arc(x + 4, y + 4, 2, 0, Math.PI * 2); ctx.fill();
+        }
+    }
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.wrapS = THREE.RepeatWrapping;
+    texture.wrapT = THREE.RepeatWrapping;
+    texture.repeat.set(24, 24);
+    return texture;
+}
+
